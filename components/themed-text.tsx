@@ -1,60 +1,35 @@
-import { StyleSheet, Text, type TextProps } from 'react-native';
+import { Text, type TextProps } from 'react-native';
 
+import { type TypeName, typeFor } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useLocale } from '@/lib/i18n';
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
   darkColor?: string;
-  type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link';
+  variant?: TypeName;
+  tone?: 'default' | 'muted' | 'coral' | 'danger' | 'success' | 'link';
 };
+
+const TONE_TO_COLOR = {
+  default: 'text',
+  muted: 'textMuted',
+  coral: 'coral',
+  danger: 'danger',
+  success: 'success',
+  link: 'coral',
+} as const;
 
 export function ThemedText({
   style,
   lightColor,
   darkColor,
-  type = 'default',
+  variant = 'body',
+  tone = 'default',
   ...rest
 }: ThemedTextProps) {
-  const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  const color = useThemeColor({ light: lightColor, dark: darkColor }, TONE_TO_COLOR[tone]);
+  const { locale } = useLocale();
 
-  return (
-    <Text
-      style={[
-        { color },
-        type === 'default' ? styles.default : undefined,
-        type === 'title' ? styles.title : undefined,
-        type === 'defaultSemiBold' ? styles.defaultSemiBold : undefined,
-        type === 'subtitle' ? styles.subtitle : undefined,
-        type === 'link' ? styles.link : undefined,
-        style,
-      ]}
-      {...rest}
-    />
-  );
+  return <Text style={[{ color }, typeFor(variant, locale), style]} {...rest} />;
 }
-
-const styles = StyleSheet.create({
-  default: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  defaultSemiBold: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    lineHeight: 32,
-  },
-  subtitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  link: {
-    lineHeight: 30,
-    fontSize: 16,
-    color: '#0a7ea4',
-  },
-});
