@@ -54,11 +54,11 @@ export const Fonts = {
 } as const;
 
 export const ArabicFonts = {
-  light: 'ThmanyahSans-Light',
-  regular: 'ThmanyahSans-Regular',
-  medium: 'ThmanyahSans-Medium',
-  bold: 'ThmanyahSans-Bold',
-  black: 'ThmanyahSans-Black',
+  light: 'thmanyahsans-Light',
+  regular: 'thmanyahsans-Regular',
+  medium: 'thmanyahsans-Medium',
+  bold: 'thmanyahsans-Bold',
+  black: 'thmanyahsans-Black',
 } as const;
 
 export type FontWeightKey = keyof typeof Fonts;

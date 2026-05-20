@@ -1,39 +1,25 @@
 import { Tabs } from 'expo-router';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { ArabicFonts, Colors, Fonts } from '@/constants/theme';
-import { useLocale, useT } from '@/lib/i18n';
+import { CustomTabBar } from '@/components/custom-tab-bar';
+import { AccountIcon } from '@/components/icons/account-icon';
+import { CalendarIcon } from '@/components/icons/calendar-icon';
+import { HeartIcon } from '@/components/icons/heart-icon';
+import { SearchIcon } from '@/components/icons/search-icon';
+import { useT } from '@/lib/i18n';
 import { STR } from '@/lib/strings';
 
 export default function TabLayout() {
-  const palette = Colors.light;
   const t = useT();
-  const { locale } = useLocale();
-  const labelFont = locale === 'ar' ? ArabicFonts.medium : Fonts.medium;
 
   return (
     <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: palette.coral,
-        tabBarInactiveTintColor: palette.tabIconDefault,
-        tabBarStyle: {
-          backgroundColor: palette.surface,
-          borderTopColor: palette.divider,
-          borderTopWidth: 0,
-          elevation: 0,
-        },
-        tabBarLabelStyle: { fontFamily: labelFont, fontSize: 11 },
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{ headerShown: false }}>
       <Tabs.Screen
         name="index"
         options={{
           title: t(STR.tabs.explore),
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={26} name="magnifyingglass" color={color} />
-          ),
+          tabBarIcon: ({ color }) => <SearchIcon size={22} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -41,7 +27,7 @@ export default function TabLayout() {
         options={{
           title: t(STR.tabs.likes),
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol size={26} name={focused ? 'heart.fill' : 'heart'} color={color} />
+            <HeartIcon size={22} stroke={color} fill={focused ? color : 'none'} />
           ),
         }}
       />
@@ -49,22 +35,14 @@ export default function TabLayout() {
         name="bookings"
         options={{
           title: t(STR.tabs.bookings),
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={26} name="calendar" color={color} />
-          ),
+          tabBarIcon: ({ color }) => <CalendarIcon size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: t(STR.tabs.profile),
-          tabBarIcon: ({ color, focused }) => (
-            <IconSymbol
-              size={26}
-              name={focused ? 'person.crop.circle.fill' : 'person.crop.circle'}
-              color={color}
-            />
-          ),
+          tabBarIcon: ({ color }) => <AccountIcon size={22} color={color} />,
         }}
       />
     </Tabs>

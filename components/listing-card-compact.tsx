@@ -1,32 +1,52 @@
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
+import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { IconButton } from '@/components/icon-button';
+import { LikeButton } from '@/components/like-button';
 import { PressableScale } from '@/components/pressable-scale';
+import { SuperhostBadge } from '@/components/superhost-badge';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { Spacing, fontFamilyFor } from '@/constants/theme';
 import { useLikes } from '@/data/likes';
 import type { Listing } from '@/data/types';
-import { formatMoney } from '@/lib/format';
+import { formatPriceSR } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 
 interface ListingCardCompactProps {
   listing: Listing;
-  width?: number;
 }
 
-export function ListingCardCompact({ listing, width = 220 }: ListingCardCompactProps) {
+const CARD_SIZE = 158;
+
+export function ListingCardCompact({ listing }: ListingCardCompactProps) {
   const t = useT();
   const { locale } = useLocale();
+  const isRTL = locale === 'ar';
   const { has, toggle } = useLikes();
   const liked = has(listing.id);
   const isSuperhost = listing.rating.average >= 4.9;
 
+  const numFmt = useMemo(
+    () => new Intl.NumberFormat(locale === 'ar' ? 'ar-SA' : 'en-US'),
+    [locale],
+  );
+
+  const specs = `${numFmt.format(listing.capacity.guests)} ${t({ ar: 'اشخاص', en: 'guests' })} . ${numFmt.format(listing.capacity.bedrooms)} ${t({ ar: 'غرف نوم', en: 'bedrooms' })}`;
+  const price = formatPriceSR(listing.pricing.nightly);
+
+  const textBase = {
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#000000',
+    textAlign: isRTL ? ('right' as const) : ('left' as const),
+    writingDirection: isRTL ? ('rtl' as const) : ('ltr' as const),
+  };
+
   return (
     <Link href={`/listing/${listing.id}`} asChild>
-      <PressableScale scaleTo={0.98} style={{ width }}>
-        <View style={[styles.imageWrap, { width }]}>
+      <PressableScale scaleTo={0.98} style={styles.card}>
+        <View style={styles.imageWrap}>
           <Image
             source={{ uri: listing.photos[0] }}
             style={styles.image}
@@ -34,33 +54,30 @@ export function ListingCardCompact({ listing, width = 220 }: ListingCardCompactP
             transition={200}
           />
           <View style={styles.heart}>
-            <IconButton
-              name={liked ? 'heart.fill' : 'heart'}
-              size={20}
-              color={liked ? Colors.light.coral : '#FFFFFF'}
-              onPress={() => toggle(listing.id)}
-            />
+            <LikeButton liked={liked} onPress={() => toggle(listing.id)} size={30} />
           </View>
           {isSuperhost ? (
             <View style={styles.badge}>
-              <ThemedText variant="micro" style={styles.badgeText}>
-                🏅
-              </ThemedText>
+              <SuperhostBadge size={30} />
             </View>
           ) : null}
         </View>
 
         <View style={styles.meta}>
-          <ThemedText variant="bodyMedium" numberOfLines={1}>
+          <ThemedText
+            numberOfLines={1}
+            style={[textBase, { fontFamily: fontFamilyFor('medium', locale) }]}>
             {t(listing.title)}
           </ThemedText>
-          <ThemedText variant="caption" tone="muted" numberOfLines={1}>
-            {listing.capacity.guests} {t({ ar: 'اشخاص', en: 'guests' })}
-            {' · '}
-            {listing.capacity.bedrooms} {t({ ar: 'غرف نوم', en: 'bedrooms' })}
+          <ThemedText
+            numberOfLines={1}
+            style={[textBase, { fontFamily: fontFamilyFor('light', locale) }]}>
+            {specs}
           </ThemedText>
-          <ThemedText variant="bodyMedium" style={{ marginTop: 2 }}>
-            {formatMoney(listing.pricing.nightly, locale)}
+          <ThemedText
+            numberOfLines={1}
+            style={[textBase, { fontFamily: fontFamilyFor('medium', locale) }]}>
+            {price}
           </ThemedText>
         </View>
       </PressableScale>
@@ -69,9 +86,11 @@ export function ListingCardCompact({ listing, width = 220 }: ListingCardCompactP
 }
 
 const styles = StyleSheet.create({
+  card: { width: CARD_SIZE },
   imageWrap: {
-    aspectRatio: 1,
-    borderRadius: Radius.xl,
+    width: CARD_SIZE,
+    height: CARD_SIZE,
+    borderRadius: 24,
     borderCurve: 'continuous',
     overflow: 'hidden',
     backgroundColor: '#F3F4F6',
@@ -79,23 +98,16 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: '100%' },
   heart: {
     position: 'absolute',
-    top: Spacing[2],
-    insetInlineStart: Spacing[2],
+    top: Spacing[3],
+    insetInlineStart: Spacing[3],
   },
   badge: {
     position: 'absolute',
-    top: Spacing[2],
-    insetInlineEnd: Spacing[2],
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    top: Spacing[3],
+    insetInlineEnd: Spacing[3],
   },
-  badgeText: { fontSize: 16, lineHeight: 18 },
   meta: {
-    paddingTop: Spacing[3],
-    gap: 2,
+    paddingTop: Spacing[2],
+    gap: 3,
   },
 });

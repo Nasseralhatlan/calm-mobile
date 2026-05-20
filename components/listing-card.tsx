@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { IconButton } from '@/components/icon-button';
+import { LikeButton } from '@/components/like-button';
 import { PressableScale } from '@/components/pressable-scale';
 import { PriceBlock } from '@/components/price-block';
 import { ThemedText } from '@/components/themed-text';
@@ -32,12 +32,7 @@ export function ListingCard({ listing }: ListingCardProps) {
             transition={200}
           />
           <View style={styles.heart}>
-            <IconButton
-              name={liked ? 'heart.fill' : 'heart'}
-              size={22}
-              color={liked ? Colors.light.coral : '#FFFFFF'}
-              onPress={() => toggle(listing.id)}
-            />
+            <LikeButton liked={liked} onPress={() => toggle(listing.id)} size={32} />
           </View>
         </View>
 
@@ -89,8 +84,8 @@ const styles = StyleSheet.create({
   },
   heart: {
     position: 'absolute',
-    top: Spacing[2],
-    right: Spacing[2],
+    top: Spacing[3],
+    insetInlineStart: Spacing[3],
   },
   meta: {
     paddingTop: Spacing[3],

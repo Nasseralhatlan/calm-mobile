@@ -1,26 +1,36 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { useMemo, useRef } from 'react';
 import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EntranceItem } from '@/components/entrance-item';
+import { SearchPlusIcon } from '@/components/icons/search-plus-icon';
 import { ListingCardCompact } from '@/components/listing-card-compact';
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+import { Colors, Radius, Shadows, Spacing, fontFamilyFor } from '@/constants/theme';
 import { currentUser } from '@/data/auth';
 import { LISTINGS } from '@/data/listings';
-import type { ListingType } from '@/data/types';
 import { useLocale, useT } from '@/lib/i18n';
 
-const CATEGORIES: { id: ListingType | 'birthday' | 'wedding'; emoji: string; label: { ar: string; en: string } }[] = [
-  { id: 'chalet', emoji: '🏖️', label: { ar: 'شاليهات', en: 'Chalets' } },
-  { id: 'rest_house', emoji: '🏡', label: { ar: 'استراحات', en: 'Rest houses' } },
-  { id: 'camp', emoji: '⛺', label: { ar: 'مخيمات', en: 'Camps' } },
-  { id: 'farm', emoji: '🌾', label: { ar: 'مزارع', en: 'Farms' } },
-  { id: 'birthday', emoji: '🎂', label: { ar: 'أعياد ميلاد', en: 'Birthdays' } },
-  { id: 'wedding', emoji: '💍', label: { ar: 'مناسبات', en: 'Events' } },
+type Category = {
+  id: string;
+  label: { ar: string; en: string };
+  emoji: string;
+};
+
+const CATEGORIES: Category[] = [
+  { id: 'chalet', label: { ar: 'شاليهات', en: 'Chalets' }, emoji: '🏖️' },
+  { id: 'rest_house', label: { ar: 'استراحات', en: 'Rest houses' }, emoji: '🏡' },
+  // { id: 'apartment', label: { ar: 'شقق', en: 'Apartments' }, emoji: '🏢' },
+  // { id: 'studio', label: { ar: 'اســتوديو', en: 'Studios' }, emoji: '🛏️' },
+  { id: 'camp_farm', label: { ar: 'مخيمات و مزارع', en: 'Camps & farms' }, emoji: '⛺' },
+  // { id: 'villa', label: { ar: 'فلل', en: 'Villas' }, emoji: '🏠' },
 ];
 
 export default function ExploreScreen() {
@@ -28,23 +38,41 @@ export default function ExploreScreen() {
   const t = useT();
   const { locale } = useLocale();
   const isRTL = locale === 'ar';
+  const router = useRouter();
+  const tabBarHeight = useBottomTabBarHeight();
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets.top + 72;
+
+  const openSearch = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    router.push('/search');
+  };
 
   const popular = useMemo(() => [...LISTINGS].sort((a, b) => b.rating.average - a.rating.average).slice(0, 6), []);
   const nearby = useMemo(() => LISTINGS.filter((l) => l.city.en === 'Riyadh').slice(0, 6), []);
+  const recentlyViewed = useMemo(
+    () => ['l_chalet_02', 'l_rest_02', 'l_camp_03', 'l_farm_01', 'l_chalet_01']
+      .map((id) => LISTINGS.find((l) => l.id === id))
+      .filter((l): l is (typeof LISTINGS)[number] => Boolean(l)),
+    [],
+  );
 
   const firstName = useMemo(() => t(currentUser.name).split(' ')[0], [t]);
-  const cityLabel = t({ ar: 'الرياض', en: 'Riyadh' });
+  const cityLabel = t({ ar: 'الريــاض', en: 'Riyadh' });
 
   const popularRef = useRef<ScrollView>(null);
   const nearbyRef = useRef<ScrollView>(null);
+  const recentRef = useRef<ScrollView>(null);
   const handleRtlScroll = (ref: React.RefObject<ScrollView | null>) => () => {
     if (isRTL) ref.current?.scrollToEnd({ animated: false });
   };
 
   return (
     <View style={[styles.container, { backgroundColor: palette.background }]}>
-      <EntranceItem delay={0}>
-        <SafeAreaView edges={['top']} style={styles.headerWrap}>
+      <EntranceItem delay={0} style={styles.headerWrap}>
+        <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFillObject} />
+        <View style={styles.headerTint} pointerEvents="none" />
+        <SafeAreaView edges={['top']}>
           <View style={styles.topBar}>
             <Image
               source={require('@/assets/logo/logo.png')}
@@ -61,7 +89,10 @@ export default function ExploreScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}>
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: headerHeight, paddingBottom: tabBarHeight + Spacing[6] },
+        ]}>
         <EntranceItem delay={60}>
           <View style={styles.greetingWrap}>
             <ThemedText variant="title" style={styles.greeting}>
@@ -70,7 +101,7 @@ export default function ExploreScreen() {
           </View>
         </EntranceItem>
 
-        <View style={styles.grid}>
+        <View style={[styles.grid, isRTL && styles.gridRTL]}>
           {CATEGORIES.map((cat, i) => (
             <EntranceItem key={cat.id} delay={140 + i * 50}>
               <PressableScale scaleTo={0.95} style={styles.gridTile}>
@@ -84,7 +115,7 @@ export default function ExploreScreen() {
         </View>
 
         <Section
-          title={t({ ar: 'الناس اعجبها', en: 'People liked' })}
+          title={t({ ar: 'النـــاس اعجبها', en: 'People liked' })}
           headerDelay={440}
           onMore={() => {}}>
           <ScrollView
@@ -119,14 +150,34 @@ export default function ExploreScreen() {
           </ScrollView>
         </Section>
 
-        <View style={{ height: Spacing[24] }} />
+        <Section
+          title={t({ ar: 'شاهدتها مؤخراً', en: 'Previously viewed' })}
+          headerDelay={1080}
+          onMore={() => {}}>
+          <ScrollView
+            ref={recentRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={[styles.carousel, isRTL && styles.carouselRTL]}
+            onContentSizeChange={handleRtlScroll(recentRef)}>
+            {recentlyViewed.map((l, i) => (
+              <EntranceItem key={l.id} delay={1120 + i * 60}>
+                <ListingCardCompact listing={l} />
+              </EntranceItem>
+            ))}
+          </ScrollView>
+        </Section>
+
       </ScrollView>
 
-      <View pointerEvents="box-none" style={styles.fabWrap}>
-        <EntranceItem delay={1100} from={16}>
-          <PressableScale scaleTo={0.95} style={styles.fab}>
-            <IconSymbol name="magnifyingglass" size={18} color="#FFFFFF" />
-            <ThemedText variant="bodyMedium" style={styles.fabText}>
+      <View pointerEvents="box-none" style={[styles.fabWrap, { bottom: tabBarHeight + Spacing[5] }]}>
+        <EntranceItem delay={950} from={16}>
+          <PressableScale scaleTo={0.95} onPress={openSearch} style={styles.fab}>
+            <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFillObject} />
+            <View style={styles.fabTint} />
+            <SearchPlusIcon size={16} color="#FFFFFF" />
+            <ThemedText
+              style={[styles.fabText, { fontFamily: fontFamilyFor('medium', locale) }]}>
               {t({ ar: 'ابدء بحث جديد', en: 'Start a new search' })}
             </ThemedText>
           </PressableScale>
@@ -170,16 +221,24 @@ const TILE_SIZE = (SCREEN_W - Spacing[5] * 2 - TILE_GAP * 2) / 3;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { paddingBottom: Spacing[12] },
+  scroll: { paddingBottom: Spacing[20] },
 
   headerWrap: {
-    backgroundColor: '#FFFFFF',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.05,
     shadowRadius: 25,
     elevation: 6,
     zIndex: 10,
+  },
+  headerTint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   topBar: {
     flexDirection: 'row',
@@ -225,10 +284,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: TILE_GAP,
   },
+  gridRTL: {
+    flexDirection: 'row-reverse',
+  },
   gridTile: {
     width: TILE_SIZE,
-    height: TILE_SIZE,
-    borderRadius: 10,
+    height: TILE_SIZE * 0.75,
+    borderRadius: 12,
     borderCurve: 'continuous',
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
@@ -242,7 +304,7 @@ const styles = StyleSheet.create({
     shadowRadius: 25,
     elevation: 6,
   },
-  gridEmoji: { fontSize: 32, lineHeight: 36 },
+  gridEmoji: { fontSize: 36, lineHeight: 40 },
   gridLabel: { textAlign: 'center' },
 
   section: {
@@ -257,8 +319,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { writingDirection: 'rtl', fontSize: 16, lineHeight: 22 },
   moreChip: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: 20,
     backgroundColor: '#F3F4F6',
     alignItems: 'center',
@@ -286,8 +348,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing[5],
     paddingVertical: Spacing[3],
     borderRadius: Radius.pill,
-    backgroundColor: '#1A1A1A',
+    overflow: 'hidden',
     ...Shadows.modal,
   },
-  fabText: { color: '#FFFFFF' },
+  fabTint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(45, 45, 45, 0.8)',
+  },
+  fabText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    lineHeight: 18,
+  },
 });

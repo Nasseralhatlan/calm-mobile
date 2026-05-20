@@ -27,11 +27,11 @@ export default function RootLayout() {
     'Satoshi-Medium': require('../assets/fonts/Satoshi-Medium.ttf'),
     'Satoshi-Bold': require('../assets/fonts/Satoshi-Bold.ttf'),
     'Satoshi-Black': require('../assets/fonts/Satoshi-Black.ttf'),
-    'ThmanyahSans-Light': require('../assets/fonts/thmanyahsans-Light.otf'),
-    'ThmanyahSans-Regular': require('../assets/fonts/thmanyahsans-Regular.otf'),
-    'ThmanyahSans-Medium': require('../assets/fonts/thmanyahsans-Medium.otf'),
-    'ThmanyahSans-Bold': require('../assets/fonts/thmanyahsans-Bold.otf'),
-    'ThmanyahSans-Black': require('../assets/fonts/thmanyahsans-Black.otf'),
+    'thmanyahsans-Light': require('../assets/fonts/thmanyahsans-Light.otf'),
+    'thmanyahsans-Regular': require('../assets/fonts/thmanyahsans-Regular.otf'),
+    'thmanyahsans-Medium': require('../assets/fonts/thmanyahsans-Medium.otf'),
+    'thmanyahsans-Bold': require('../assets/fonts/thmanyahsans-Bold.otf'),
+    'thmanyahsans-Black': require('../assets/fonts/thmanyahsans-Black.otf'),
   });
 
   const { isReady: bootstrapReady } = useBootstrap();
@@ -58,6 +58,15 @@ export default function RootLayout() {
                   <Stack.Screen
                     name="booking/[id]/confirmation"
                     options={{ headerShown: false, animation: 'fade' }}
+                  />
+                  <Stack.Screen
+                    name="search"
+                    options={{
+                      presentation: 'transparentModal',
+                      animation: 'none',
+                      headerShown: false,
+                      contentStyle: { backgroundColor: 'transparent' },
+                    }}
                   />
                 </Stack>
                 <StatusBar style="dark" />

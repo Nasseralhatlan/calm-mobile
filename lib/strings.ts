@@ -4,10 +4,10 @@ const L = <T,>(ar: T, en: T): Localized<T> => ({ ar, en });
 
 export const STR = {
   tabs: {
-    explore: L('استكشف', 'Explore'),
-    likes: L('المفضلة', 'Likes'),
-    bookings: L('الحجوزات', 'Bookings'),
-    profile: L('حسابي', 'Profile'),
+    explore: L('اســتكشف', 'Explore'),
+    likes: L('الــمفضلة', 'Likes'),
+    bookings: L('الحــجوزات', 'Bookings'),
+    profile: L('حــسابي', 'Profile'),
   },
   explore: {
     searchPlaceholder: L('ابحث عن شاليه أو استراحة', 'Search chalets or rest houses'),

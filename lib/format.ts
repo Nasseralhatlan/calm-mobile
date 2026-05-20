@@ -15,6 +15,12 @@ export function formatMoney(halalas: number, locale: Locale, opts?: { showCurren
   return fmt.format(sar);
 }
 
+export function formatPriceSR(halalas: number): string {
+  const sar = halalas / 100;
+  const num = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(sar);
+  return `${num} SR`;
+}
+
 export function formatDateRange(checkIn: string, checkOut: string, locale: Locale): string {
   const start = new Date(checkIn);
   const end = new Date(checkOut);

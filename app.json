@@ -3,7 +3,7 @@
     "name": "Calm",
     "slug": "calm",
     "owner": "calmapp",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "calmmobile",
@@ -18,7 +18,8 @@
       "infoPlist": {
         "CFBundleLocalizations": ["en", "ar"],
         "CFBundleAllowMixedLocalizations": true,
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIUserInterfaceStyle": "Light"
       }
     },
     "android": {
@@ -39,10 +40,27 @@
     "plugins": [
       "expo-router",
       [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Satoshi-Light.ttf",
+            "./assets/fonts/Satoshi-Regular.ttf",
+            "./assets/fonts/Satoshi-Medium.ttf",
+            "./assets/fonts/Satoshi-Bold.ttf",
+            "./assets/fonts/Satoshi-Black.ttf",
+            "./assets/fonts/thmanyahsans-Light.otf",
+            "./assets/fonts/thmanyahsans-Regular.otf",
+            "./assets/fonts/thmanyahsans-Medium.otf",
+            "./assets/fonts/thmanyahsans-Bold.otf",
+            "./assets/fonts/thmanyahsans-Black.otf"
+          ]
+        }
+      ],
+      [
         "expo-splash-screen",
         {
-          "image": "./assets/logo/logo.png",
-          "imageWidth": 180,
+          "image": "./assets/images/splash-blank.png",
+          "imageWidth": 1,
           "resizeMode": "contain",
           "backgroundColor": "#FFFFFF",
           "dark": {
