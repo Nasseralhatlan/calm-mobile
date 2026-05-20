@@ -68,6 +68,64 @@ export default function RootLayout() {
                       contentStyle: { backgroundColor: 'transparent' },
                     }}
                   />
+                  <Stack.Screen
+                    name="results"
+                    options={{
+                      headerShown: false,
+                      animation: 'fade',
+                      animationDuration: 220,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="filters"
+                    options={{
+                      presentation: 'modal',
+                      headerShown: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="quick-filters"
+                    options={{
+                      presentation: 'modal',
+                      headerShown: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="listing/[id]/amenities"
+                    options={{
+                      presentation: 'transparentModal',
+                      animation: 'none',
+                      headerShown: false,
+                      contentStyle: { backgroundColor: 'transparent' },
+                    }}
+                  />
+                  <Stack.Screen
+                    name="listing/[id]/reviews"
+                    options={{
+                      presentation: 'transparentModal',
+                      animation: 'none',
+                      headerShown: false,
+                      contentStyle: { backgroundColor: 'transparent' },
+                    }}
+                  />
+                  <Stack.Screen
+                    name="listing/[id]/map"
+                    options={{
+                      presentation: 'transparentModal',
+                      animation: 'none',
+                      headerShown: false,
+                      contentStyle: { backgroundColor: 'transparent' },
+                    }}
+                  />
+                  <Stack.Screen
+                    name="listing/[id]/dates"
+                    options={{
+                      presentation: 'transparentModal',
+                      animation: 'none',
+                      headerShown: false,
+                      contentStyle: { backgroundColor: 'transparent' },
+                    }}
+                  />
                 </Stack>
                 <StatusBar style="dark" />
                 {!splashGone ? (

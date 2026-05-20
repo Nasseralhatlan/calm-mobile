@@ -1,4 +1,3 @@
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
@@ -39,9 +38,10 @@ export default function ExploreScreen() {
   const { locale } = useLocale();
   const isRTL = locale === 'ar';
   const router = useRouter();
-  const tabBarHeight = useBottomTabBarHeight();
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 72;
+  // Custom tab bar is position:absolute → useBottomTabBarHeight returns 0. Compute manually.
+  const tabBarHeight = insets.bottom * 0.75 + 64;
 
   const openSearch = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});

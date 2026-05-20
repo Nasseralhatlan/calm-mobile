@@ -1,240 +1,311 @@
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
-import {
-  Dimensions,
-  ScrollView,
-  StyleSheet,
-  View,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  runOnJS,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
-import { IconButton } from '@/components/icon-button';
-import { PriceBlock } from '@/components/price-block';
+import { AmenitiesPreview } from '@/components/amenities-preview';
+import { CapacityPills } from '@/components/capacity-pills';
+import { DateRangePills } from '@/components/date-range-pills';
+import { FloatingCircleButton } from '@/components/floating-circle-button';
+import { HeartIcon } from '@/components/icons/heart-icon';
+import { HeroCarousel } from '@/components/hero-carousel';
+import { HostCard } from '@/components/host-card';
+import { MapPreview } from '@/components/map-preview';
+import { ReserveBar } from '@/components/reserve-bar';
+import { Section } from '@/components/section';
+import { SuperhostBadge } from '@/components/superhost-badge';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Radius, Spacing } from '@/constants/theme';
-import { AMENITIES } from '@/data/amenities';
+import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
 import { getHost } from '@/data/hosts';
 import { useLikes } from '@/data/likes';
 import { getListing } from '@/data/listings';
 import { getReviewsForListing } from '@/data/reviews';
-import { useT } from '@/lib/i18n';
-import { STR } from '@/lib/strings';
+import { useLocale, useT } from '@/lib/i18n';
 
-const { width: SCREEN_W } = Dimensions.get('window');
-const HERO_HEIGHT = SCREEN_W * 0.95;
+const HERO_FADE_DISTANCE = 220;
 
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const t = useT();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { locale } = useLocale();
+  const t = useT();
   const { has, toggle } = useLikes();
-  const [page, setPage] = useState(0);
 
   const listing = getListing(id);
+  const host = listing ? getHost(listing.hostId) : undefined;
+  const reviews = listing ? getReviewsForListing(listing.id) : [];
+
+  const scrollY = useSharedValue(0);
+  const [statusStyle, setStatusStyle] = useState<'light' | 'dark'>('light');
+
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      scrollY.value = e.contentOffset.y;
+      const next: 'light' | 'dark' =
+        e.contentOffset.y > HERO_FADE_DISTANCE - 40 ? 'dark' : 'light';
+      runOnJS(setStatusStyle)(next);
+    },
+  });
+
+  const topBarBackdropStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      scrollY.value,
+      [HERO_FADE_DISTANCE - 80, HERO_FADE_DISTANCE],
+      [0, 1],
+      Extrapolation.CLAMP,
+    ),
+  }));
+
+  const badgeStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      scrollY.value,
+      [0, HERO_FADE_DISTANCE * 0.6],
+      [1, 0],
+      Extrapolation.CLAMP,
+    ),
+    transform: [
+      {
+        translateY: interpolate(
+          scrollY.value,
+          [0, HERO_FADE_DISTANCE * 0.6],
+          [0, -16],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
+  }));
+
+  const liked = listing ? has(listing.id) : false;
+
+  const handleLike = () => {
+    if (!listing) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    toggle(listing.id);
+  };
+
+  const cityRegion = useMemo(
+    () => (listing ? `${t(listing.city)} · ${t(listing.region)}` : ''),
+    [listing, t],
+  );
+
   if (!listing) {
     return (
       <SafeAreaView style={styles.notFound}>
-        <ThemedText variant="heading">Listing not found</ThemedText>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ThemedText variant="heading">
+          {t({ ar: 'لم يتم العثور على المكان', en: 'Listing not found' })}
+        </ThemedText>
       </SafeAreaView>
     );
   }
 
-  const host = getHost(listing.hostId);
-  const reviews = getReviewsForListing(listing.id);
-  const liked = has(listing.id);
-
-  const onScrollPhotos = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    setPage(Math.round(e.nativeEvent.contentOffset.x / SCREEN_W));
-  };
+  const isSuperhost = listing.rating.average >= 4.9;
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
+      <StatusBar style={statusStyle} animated />
 
-      {/* Floating top controls */}
-      <SafeAreaView style={styles.topControls} edges={['top']} pointerEvents="box-none">
-        <View style={styles.topBar}>
-          <IconButton
-            name="chevron.left"
-            size={20}
-            color="#1A1A1A"
-            bg="#FFFFFF"
-            onPress={() => router.back()}
-          />
-          <View style={{ flex: 1 }} />
-          <IconButton
-            name="square.and.arrow.up"
-            size={18}
-            color="#1A1A1A"
-            bg="#FFFFFF"
-            onPress={() => {}}
-          />
-          <View style={{ width: Spacing[2] }} />
-          <IconButton
-            name={liked ? 'heart.fill' : 'heart'}
-            size={20}
-            color={liked ? Colors.light.coral : '#1A1A1A'}
-            bg="#FFFFFF"
-            onPress={() => toggle(listing.id)}
-          />
-        </View>
-      </SafeAreaView>
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 110 }}>
+        <HeroCarousel photos={listing.photos} scrollY={scrollY} />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        {/* Hero gallery */}
-        <View>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={onScrollPhotos}
-            scrollEventThrottle={32}>
-            {listing.photos.map((url, i) => (
-              <Image
-                key={i}
-                source={{ uri: url }}
-                style={styles.hero}
-                contentFit="cover"
-                transition={200}
-              />
-            ))}
-          </ScrollView>
-          <View style={styles.pageDots}>
-            {listing.photos.map((_, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.dot,
-                  { opacity: page === i ? 1 : 0.5, width: page === i ? 6 : 5, height: page === i ? 6 : 5 },
-                ]}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* Title + meta */}
-        <View style={styles.section}>
-          <ThemedText variant="title">{t(listing.title)}</ThemedText>
+        <View style={styles.titleBlock}>
+          <ThemedText
+            style={[styles.title, { fontFamily: fontFamilyFor('bold', locale) }]}>
+            {t(listing.title)}
+          </ThemedText>
           <View style={styles.metaRow}>
-            <IconSymbol name="star.fill" size={14} color={Colors.light.text} />
-            <ThemedText variant="callout">
+            <IconSymbol name="star.fill" size={14} color={Colors.light.coral} />
+            <ThemedText
+              style={[styles.metaStrong, { fontFamily: fontFamilyFor('bold', locale) }]}>
               {' '}
               {listing.rating.average.toFixed(2)}
             </ThemedText>
-            <ThemedText variant="callout" tone="muted">
+            <ThemedText
+              style={[styles.metaMuted, { fontFamily: fontFamilyFor('regular', locale) }]}>
               {' '}
-              · {listing.rating.count} {t({ ar: 'تقييم', en: 'reviews' })}
-            </ThemedText>
-            <ThemedText variant="callout" tone="muted">
-              {' '}
-              · {t(listing.city)}
-            </ThemedText>
-          </View>
-          <View style={styles.capacityRow}>
-            <ThemedText variant="body">
-              {listing.capacity.guests} {t({ ar: 'ضيف', en: 'guests' })} · {listing.capacity.bedrooms}{' '}
-              {t(STR.listing.bedrooms)} · {listing.capacity.bathrooms} {t(STR.listing.bathrooms)}
+              · {listing.rating.count} {t({ ar: 'تقييم', en: 'reviews' })} · {cityRegion}
             </ThemedText>
           </View>
         </View>
 
-        <View style={styles.divider} />
+        <View style={styles.capacityWrap}>
+          <CapacityPills capacity={listing.capacity} />
+        </View>
 
-        {/* Host strip */}
         {host ? (
-          <>
-            <View style={styles.section}>
-              <View style={styles.hostRow}>
-                <Image source={{ uri: host.avatarUrl }} style={styles.hostAvatar} />
-                <View style={{ marginStart: Spacing[3], flex: 1 }}>
-                  <ThemedText variant="bodyMedium">
-                    {t(STR.listing.hostedBy)} {t(host.name)}
-                  </ThemedText>
-                  {host.isSuperHost ? (
-                    <ThemedText variant="caption" tone="muted">
-                      ★ {t(STR.listing.superhost)}
-                    </ThemedText>
-                  ) : null}
-                </View>
-              </View>
-            </View>
-            <View style={styles.divider} />
-          </>
+          <Section title={t({ ar: 'عن المضيف', en: 'About the host' })}>
+            <HostCard host={host} />
+          </Section>
         ) : null}
 
-        {/* Description */}
-        <View style={styles.section}>
-          <ThemedText variant="heading">{t(STR.listing.description)}</ThemedText>
-          <ThemedText variant="body" style={{ marginTop: Spacing[3] }}>
+        <Section title={t({ ar: 'تاريخ الحجز', en: 'Your stay' })}>
+          <DateRangePills
+            checkIn={t({ ar: '20 يونيو 2026', en: '20 Jun 2026' })}
+            checkOut={t({ ar: '22 يونيو 2026', en: '22 Jun 2026' })}
+            onPress={() => router.push(`/listing/${listing.id}/dates`)}
+          />
+        </Section>
+
+        <Section title={t({ ar: 'عن المكان', en: 'About this place' })}>
+          <ThemedText
+            style={[styles.body, { fontFamily: fontFamilyFor('regular', locale) }]}>
             {t(listing.description)}
           </ThemedText>
-        </View>
+        </Section>
 
-        <View style={styles.divider} />
+        <Section title={t({ ar: 'المرافق', en: 'What this place offers' })}>
+          <AmenitiesPreview
+            amenities={listing.amenities}
+            previewCount={6}
+            onShowAll={() => router.push(`/listing/${listing.id}/amenities`)}
+          />
+        </Section>
 
-        {/* Amenities */}
-        <View style={styles.section}>
-          <ThemedText variant="heading">{t(STR.listing.amenities)}</ThemedText>
-          <View style={styles.amenitiesGrid}>
-            {listing.amenities.map((aid) => (
-              <View key={aid} style={styles.amenityRow}>
-                <ThemedText variant="body">• {t(AMENITIES[aid].label)}</ThemedText>
-              </View>
-            ))}
-          </View>
-        </View>
+        <Section title={t({ ar: 'موقع المكان', en: 'Where you’ll be' })}>
+          <MapPreview
+            coordinates={listing.coordinates}
+            cityLabel={cityRegion}
+            onPress={() => router.push(`/listing/${listing.id}/map`)}
+          />
+        </Section>
 
-        <View style={styles.divider} />
-
-        {/* Reviews preview */}
         {reviews.length > 0 ? (
-          <View style={styles.section}>
-            <View style={styles.metaRow}>
-              <IconSymbol name="star.fill" size={16} color={Colors.light.text} />
-              <ThemedText variant="heading">
-                {' '}
-                {listing.rating.average.toFixed(2)} · {listing.rating.count}{' '}
-                {t({ ar: 'تقييم', en: 'reviews' })}
-              </ThemedText>
-            </View>
-            {reviews.slice(0, 2).map((r) => (
-              <View key={r.id} style={styles.reviewCard}>
-                <View style={styles.reviewHeader}>
-                  <Image source={{ uri: r.authorAvatarUrl }} style={styles.reviewAvatar} />
-                  <View style={{ marginStart: Spacing[3] }}>
-                    <ThemedText variant="bodyMedium">{t(r.authorName)}</ThemedText>
-                    <ThemedText variant="caption" tone="muted">
-                      {'★'.repeat(r.rating)}
-                    </ThemedText>
+          <Section
+            title={`★ ${listing.rating.average.toFixed(2)} · ${listing.rating.count} ${t({
+              ar: 'تقييم',
+              en: 'reviews',
+            })}`}>
+            <View style={styles.reviews}>
+              {reviews.slice(0, 3).map((r) => (
+                <View key={r.id} style={styles.reviewCard}>
+                  <View style={styles.reviewHead}>
+                    <Image
+                      source={{ uri: r.authorAvatarUrl }}
+                      style={styles.reviewAvatar}
+                      contentFit="cover"
+                    />
+                    <View style={{ flex: 1 }}>
+                      <ThemedText
+                        style={[
+                          styles.reviewName,
+                          { fontFamily: fontFamilyFor('bold', locale) },
+                        ]}
+                        numberOfLines={1}>
+                        {t(r.authorName)}
+                      </ThemedText>
+                      <ThemedText style={styles.reviewStars}>
+                        {'★'.repeat(r.rating)}
+                      </ThemedText>
+                    </View>
                   </View>
+                  <ThemedText
+                    style={[
+                      styles.reviewText,
+                      { fontFamily: fontFamilyFor('regular', locale) },
+                    ]}
+                    numberOfLines={4}>
+                    {t(r.text)}
+                  </ThemedText>
                 </View>
-                <ThemedText variant="body" style={{ marginTop: Spacing[2] }}>
-                  {t(r.text)}
+              ))}
+            </View>
+            {reviews.length > 3 ? (
+              <View style={{ marginTop: Spacing[5] }}>
+                <ThemedText
+                  onPress={() => router.push(`/listing/${listing.id}/reviews`)}
+                  style={[
+                    styles.showAll,
+                    { fontFamily: fontFamilyFor('medium', locale) },
+                  ]}>
+                  {t({
+                    ar: `عرض جميع التقييمات (${reviews.length})`,
+                    en: `Show all ${reviews.length} reviews`,
+                  })}
                 </ThemedText>
               </View>
+            ) : null}
+          </Section>
+        ) : null}
+
+        <Section title={t({ ar: 'أمور يجب معرفتها', en: 'House rules' })}>
+          <View style={styles.rules}>
+            {[
+              t({ ar: 'تسجيل الدخول: بعد 3 مساءً', en: 'Check-in: after 3 PM' }),
+              t({ ar: 'تسجيل المغادرة: قبل 12 ظهراً', en: 'Check-out: before 12 PM' }),
+              t({ ar: 'ممنوع التدخين داخل المكان', en: 'No smoking indoors' }),
+              t({ ar: 'ممنوع الحفلات أو الفعاليات', en: 'No parties or events' }),
+              t({ ar: 'ممنوع الحيوانات الأليفة', en: 'No pets' }),
+            ].map((rule) => (
+              <ThemedText
+                key={rule}
+                style={[styles.rule, { fontFamily: fontFamilyFor('regular', locale) }]}>
+                · {rule}
+              </ThemedText>
             ))}
           </View>
-        ) : null}
-      </ScrollView>
+        </Section>
+      </Animated.ScrollView>
 
-      {/* Sticky Reserve bar */}
-      <SafeAreaView style={styles.reserveBar} edges={['bottom']}>
-        <View style={styles.reserveInner}>
-          <View style={{ flex: 1 }}>
-            <PriceBlock halalas={listing.pricing.nightly} size="lg" />
-          </View>
-          <Button
-            label={t(STR.listing.reserve)}
-            size="lg"
-            onPress={() => router.push(`/listing/${listing.id}/reserve`)}
-          />
+      {/* Floating top bar over photo */}
+      <View style={[styles.topBarLayer, { paddingTop: insets.top }]} pointerEvents="box-none">
+        <Animated.View style={[styles.topBarBackdrop, topBarBackdropStyle]} pointerEvents="none">
+          <BlurView intensity={70} tint="light" style={StyleSheet.absoluteFillObject} />
+          <View style={styles.topBarTint} />
+        </Animated.View>
+        <View style={styles.topBar}>
+          <FloatingCircleButton onPress={() => router.back()}>
+            <IconSymbol name="chevron.left" size={18} color={Colors.light.text} />
+          </FloatingCircleButton>
+          <View style={{ flex: 1 }} />
+          <FloatingCircleButton onPress={() => {}}>
+            <IconSymbol name="square.and.arrow.up" size={16} color={Colors.light.text} />
+          </FloatingCircleButton>
+          <View style={{ width: Spacing[2] }} />
+          <FloatingCircleButton onPress={handleLike}>
+            <HeartIcon
+              size={20}
+              stroke={liked ? Colors.light.coral : Colors.light.text}
+              fill={liked ? Colors.light.coral : 'none'}
+              strokeWidth={1.8}
+            />
+          </FloatingCircleButton>
         </View>
-      </SafeAreaView>
+      </View>
+
+      {/* Superhost badge corner */}
+      {isSuperhost ? (
+        <Animated.View
+          style={[styles.badgeLayer, { paddingTop: insets.top + 56 }, badgeStyle]}
+          pointerEvents="none">
+          <View style={styles.badgePos}>
+            <SuperhostBadge size={36} />
+          </View>
+        </Animated.View>
+      ) : null}
+
+      <ReserveBar
+        halalas={listing.pricing.nightly}
+        onReserve={() => router.push(`/listing/${listing.id}/reserve`)}
+      />
     </View>
   );
 }
@@ -242,99 +313,101 @@ export default function ListingDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   notFound: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  topControls: {
+
+  topBarLayer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 10,
+    zIndex: 20,
+  },
+  topBarBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  topBarTint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing[4],
     paddingTop: Spacing[2],
+    paddingBottom: Spacing[2],
   },
-  hero: {
-    width: SCREEN_W,
-    height: HERO_HEIGHT,
-    backgroundColor: '#F3F4F6',
-  },
-  pageDots: {
+
+  badgeLayer: {
     position: 'absolute',
-    bottom: Spacing[3],
-    alignSelf: 'center',
-    flexDirection: 'row',
-    gap: 6,
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 15,
   },
-  dot: {
-    borderRadius: 4,
-    backgroundColor: '#FFFFFF',
+  badgePos: {
+    alignItems: 'flex-end',
+    paddingHorizontal: Spacing[4],
   },
-  section: {
+
+  titleBlock: {
     paddingHorizontal: Spacing[5],
-    paddingVertical: Spacing[6],
+    paddingTop: Spacing[5],
+    paddingBottom: Spacing[3],
+  },
+  title: {
+    fontSize: 22,
+    lineHeight: 28,
+    color: Colors.light.text,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: Spacing[2],
+    flexWrap: 'wrap',
   },
-  capacityRow: {
-    marginTop: Spacing[1],
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.light.divider,
-    marginHorizontal: Spacing[5],
-  },
-  hostRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  hostAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#F3F4F6',
-  },
-  amenitiesGrid: {
-    marginTop: Spacing[3],
-    gap: Spacing[2],
-  },
-  amenityRow: {
-    paddingVertical: Spacing[1],
-  },
-  reviewCard: {
-    marginTop: Spacing[4],
-    padding: Spacing[4],
-    backgroundColor: '#FAFAFA',
-    borderRadius: Radius.lg,
-  },
-  reviewHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  reviewAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F3F4F6',
-  },
-  reserveBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.light.border,
-  },
-  reserveInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  metaStrong: { fontSize: 13, lineHeight: 18, color: Colors.light.text },
+  metaMuted: { fontSize: 13, lineHeight: 18, color: Colors.light.textMuted },
+
+  capacityWrap: {
     paddingHorizontal: Spacing[5],
-    paddingVertical: Spacing[3],
+    paddingBottom: Spacing[4],
+  },
+
+  body: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: Colors.light.text,
+  },
+
+  reviews: { gap: Spacing[3] },
+  reviewCard: {
+    padding: Spacing[4],
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    backgroundColor: '#FAFAFA',
     gap: Spacing[3],
   },
+  reviewHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing[3],
+  },
+  reviewAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+  },
+  reviewName: { fontSize: 14, lineHeight: 18, color: Colors.light.text },
+  reviewStars: { fontSize: 12, lineHeight: 16, color: Colors.light.coral },
+  reviewText: { fontSize: 13, lineHeight: 20, color: Colors.light.text },
+
+  showAll: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: Colors.light.text,
+    textDecorationLine: 'underline',
+  },
+
+  rules: { gap: Spacing[2] },
+  rule: { fontSize: 14, lineHeight: 22, color: Colors.light.text },
 });

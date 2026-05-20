@@ -31,6 +31,7 @@ const MAPPING = {
   star: 'star-border',
   'star.fill': 'star',
   calendar: 'event',
+  'slider.horizontal.3': 'tune',
 } as IconMapping;
 
 /**
