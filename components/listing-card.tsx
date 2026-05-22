@@ -1,7 +1,17 @@
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
-import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Dimensions, StyleSheet, View } from 'react-native';
+import { ScrollView as GHScrollView } from 'react-native-gesture-handler';
+import Animated, {
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+  type SharedValue,
+} from 'react-native-reanimated';
+
+const AnimatedGHScrollView = Animated.createAnimatedComponent(GHScrollView);
 
 import { LikeButton } from '@/components/like-button';
 import { PressableScale } from '@/components/pressable-scale';
@@ -13,6 +23,9 @@ import { useLikes } from '@/data/likes';
 import type { Listing } from '@/data/types';
 import { formatPriceSR } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
+
+const { width: SCREEN_W } = Dimensions.get('window');
+const DEFAULT_CARD_WIDTH = SCREEN_W - Spacing[5] * 2;
 
 interface ListingCardProps {
   listing: Listing;
@@ -43,22 +56,12 @@ export function ListingCard({ listing }: ListingCardProps) {
   return (
     <Link href={`/listing/${listing.id}`} asChild>
       <PressableScale scaleTo={0.985} style={styles.card}>
-        <View style={styles.imageWrap}>
-          <Image
-            source={{ uri: listing.photos[0] }}
-            style={styles.image}
-            contentFit="cover"
-            transition={200}
-          />
-          <View style={styles.heart}>
-            <LikeButton liked={liked} onPress={() => toggle(listing.id)} size={32} />
-          </View>
-          {isSuperhost ? (
-            <View style={styles.badge}>
-              <SuperhostBadge size={32} />
-            </View>
-          ) : null}
-        </View>
+        <PhotoCarousel
+          photos={listing.photos}
+          liked={liked}
+          onToggleLike={() => toggle(listing.id)}
+          isSuperhost={isSuperhost}
+        />
 
         <View style={styles.meta}>
           <View style={[styles.titleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -105,6 +108,85 @@ export function ListingCard({ listing }: ListingCardProps) {
   );
 }
 
+function PhotoCarousel({
+  photos,
+  liked,
+  onToggleLike,
+  isSuperhost,
+}: {
+  photos: string[];
+  liked: boolean;
+  onToggleLike: () => void;
+  isSuperhost: boolean;
+}) {
+  const [width, setWidth] = useState(DEFAULT_CARD_WIDTH);
+  const scrollX = useSharedValue(0);
+  const pageIndex = useDerivedValue(() =>
+    width > 0 ? Math.round(scrollX.value / width) : 0,
+  );
+
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      scrollX.value = e.contentOffset.x;
+    },
+  });
+
+  return (
+    <View
+      style={styles.imageWrap}
+      onLayout={(e) => {
+        const w = e.nativeEvent.layout.width;
+        if (w > 0 && w !== width) setWidth(w);
+      }}>
+      <AnimatedGHScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        bounces={false}>
+        {photos.map((url) => (
+          <Image
+            key={url}
+            source={{ uri: url }}
+            style={[styles.image, { width }]}
+            contentFit="cover"
+            transition={200}
+          />
+        ))}
+      </AnimatedGHScrollView>
+
+      <View style={styles.heart}>
+        <LikeButton liked={liked} onPress={onToggleLike} size={32} />
+      </View>
+      {isSuperhost ? (
+        <View style={styles.badge}>
+          <SuperhostBadge size={32} />
+        </View>
+      ) : null}
+
+      {photos.length > 1 ? (
+        <View style={styles.dotsWrap} pointerEvents="none">
+          {photos.map((_, i) => (
+            <Dot key={i} index={i} pageIndex={pageIndex} />
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function Dot({ index, pageIndex }: { index: number; pageIndex: SharedValue<number> }) {
+  const style = useAnimatedStyle(() => {
+    const active = pageIndex.value === index;
+    return {
+      width: active ? 14 : 5,
+      opacity: active ? 1 : 0.55,
+    };
+  });
+  return <Animated.View style={[styles.dot, style]} />;
+}
+
 const styles = StyleSheet.create({
   card: {
     marginBottom: Spacing[6],
@@ -118,7 +200,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
   },
   image: {
-    width: '100%',
     height: '100%',
   },
   heart: {
@@ -130,6 +211,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Spacing[3],
     insetInlineEnd: Spacing[3],
+  },
+  dotsWrap: {
+    position: 'absolute',
+    bottom: Spacing[3],
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  dot: {
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#FFFFFF',
   },
   meta: {
     paddingTop: Spacing[3],

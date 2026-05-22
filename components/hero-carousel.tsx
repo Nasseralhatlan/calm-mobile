@@ -1,7 +1,8 @@
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
+import { Dimensions, Pressable, StyleSheet, View } from 'react-native';
+import { ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -16,15 +17,18 @@ import Animated, {
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 
+const AnimatedGHScrollView = Animated.createAnimatedComponent(GHScrollView);
+
 const { width: SCREEN_W } = Dimensions.get('window');
 const HERO_HEIGHT = SCREEN_W * 0.95;
 
 interface HeroCarouselProps {
   photos: string[];
   scrollY?: SharedValue<number>;
+  onPhotoPress?: (index: number) => void;
 }
 
-export function HeroCarousel({ photos, scrollY }: HeroCarouselProps) {
+export function HeroCarousel({ photos, scrollY, onPhotoPress }: HeroCarouselProps) {
   const [page, setPage] = useState(0);
   const scrollX = useSharedValue(0);
   const pageIndex = useDerivedValue(() => Math.round(scrollX.value / SCREEN_W));
@@ -39,55 +43,79 @@ export function HeroCarousel({ photos, scrollY }: HeroCarouselProps) {
     },
   });
 
-  const heroParallaxStyle = useAnimatedStyle(() => {
+  // Pull-to-zoom applies to the wrap so the clip box grows with the photo.
+  // Active only when overscrolling up (y < 0). When scrolling down, the wrap
+  // stays put so it never covers the section below it.
+  const heroWrapStyle = useAnimatedStyle(() => {
     if (!scrollY) return {};
     const y = scrollY.value;
-    const scale = interpolate(y, [-200, 0], [1.25, 1], Extrapolation.CLAMP);
+    if (y < 0) {
+      return {
+        transform: [
+          { translateY: y / 2 },
+          { scale: 1 - y / HERO_HEIGHT },
+        ],
+      };
+    }
+    return {};
+  });
+
+  // Slow downward parallax of the photo content inside the wrap (only when
+  // scrolling down). Stays inside the clipped wrap, so it can't bleed onto
+  // the sections beneath the hero.
+  const heroContentStyle = useAnimatedStyle(() => {
+    if (!scrollY) return {};
+    const y = scrollY.value;
+    if (y <= 0) return {};
     const translateY = interpolate(
       y,
       [0, HERO_HEIGHT],
       [0, HERO_HEIGHT * 0.35],
       Extrapolation.CLAMP,
     );
-    return { transform: [{ translateY }, { scale }] };
+    return { transform: [{ translateY }] };
   });
 
   return (
-    <View style={styles.wrap}>
-      <Animated.View style={[styles.heroFrame, heroParallaxStyle]}>
-        <Animated.ScrollView
+    <Animated.View style={[styles.wrap, heroWrapStyle]}>
+      <Animated.View style={[styles.heroContent, heroContentStyle]}>
+        <AnimatedGHScrollView
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           onScroll={onScrollH}
           scrollEventThrottle={16}
-          bounces>
-          {photos.map((url) => (
-            <Image
+          bounces={false}>
+          {photos.map((url, i) => (
+            <Pressable
               key={url}
-              source={{ uri: url }}
-              style={styles.hero}
-              contentFit="cover"
-              transition={200}
-            />
+              onPress={() => onPhotoPress?.(i)}
+              style={styles.heroSlide}>
+              <Image
+                source={{ uri: url }}
+                style={styles.hero}
+                contentFit="cover"
+                transition={200}
+              />
+            </Pressable>
           ))}
-        </Animated.ScrollView>
-
-        <View style={styles.dotsWrap} pointerEvents="none">
-          {photos.map((_, i) => (
-            <Dot key={i} index={i} pageIndex={pageIndex} />
-          ))}
-        </View>
-
-        <View style={styles.counter} pointerEvents="none">
-          <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFillObject} />
-          <View style={styles.counterTint} />
-          <ThemedText variant="caption" style={styles.counterText}>
-            {page + 1} / {photos.length}
-          </ThemedText>
-        </View>
+        </AnimatedGHScrollView>
       </Animated.View>
-    </View>
+
+      <View style={styles.dotsWrap} pointerEvents="none">
+        {photos.map((_, i) => (
+          <Dot key={i} index={i} pageIndex={pageIndex} />
+        ))}
+      </View>
+
+      <View style={styles.counter} pointerEvents="none">
+        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFillObject} />
+        <View style={styles.counterTint} />
+        <ThemedText variant="caption" style={styles.counterText}>
+          {page + 1} / {photos.length}
+        </ThemedText>
+      </View>
+    </Animated.View>
   );
 }
 
@@ -109,7 +137,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#F3F4F6',
   },
-  heroFrame: {
+  heroContent: {
+    width: SCREEN_W,
+    height: HERO_HEIGHT,
+  },
+  heroSlide: {
     width: SCREEN_W,
     height: HERO_HEIGHT,
   },

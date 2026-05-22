@@ -23,9 +23,10 @@ export default function ResultsScreen() {
   const t = useT();
   const { locale } = useLocale();
   const insets = useSafeAreaInsets();
-  const { city, date, guests } = useLocalSearchParams<{
+  const { city, startDate, endDate, guests } = useLocalSearchParams<{
     city?: string;
-    date?: string;
+    startDate?: string;
+    endDate?: string;
     guests?: string;
   }>();
 
@@ -43,11 +44,19 @@ export default function ResultsScreen() {
   );
 
   const dateLabel = useMemo(() => {
-    if (!date) return null;
-    const d = new Date(date);
-    if (Number.isNaN(d.getTime())) return null;
-    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-  }, [date]);
+    const parse = (s?: string) => {
+      if (!s) return null;
+      const d = new Date(s);
+      return Number.isNaN(d.getTime()) ? null : d;
+    };
+    const fmt = (d: Date) =>
+      d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+    const s = parse(startDate);
+    const e = parse(endDate);
+    if (s && e) return `${fmt(s)} — ${fmt(e)}`;
+    if (s) return fmt(s);
+    return null;
+  }, [startDate, endDate]);
 
   const guestCount = useMemo(() => {
     if (!guests) return null;

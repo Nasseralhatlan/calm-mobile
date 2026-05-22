@@ -7,15 +7,24 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
 import { useLocale } from '@/lib/i18n';
 
+export interface DateRange {
+  start: Date | null;
+  end: Date | null;
+}
+
 interface WhenContentProps {
-  selected: Date | null;
-  onSelect: (d: Date) => void;
+  range: DateRange;
+  onChange: (range: DateRange) => void;
   onConfirm?: () => void;
 }
 
 const MONTHS_TO_SHOW = 6;
 
-export function WhenContent({ selected, onSelect, onConfirm }: WhenContentProps) {
+function sameDay(a: Date, b: Date) {
+  return a.toDateString() === b.toDateString();
+}
+
+export function WhenContent({ range, onChange, onConfirm }: WhenContentProps) {
   const { locale } = useLocale();
   const today = useMemo(() => {
     const d = new Date();
@@ -54,7 +63,27 @@ export function WhenContent({ selected, onSelect, onConfirm }: WhenContentProps)
 
   const handlePick = (d: Date) => {
     Haptics.selectionAsync().catch(() => {});
-    onSelect(d);
+    const { start, end } = range;
+    let next: DateRange;
+    if (!start || (start && end)) {
+      next = { start: d, end: null };
+    } else if (d.getTime() <= start.getTime()) {
+      next = { start: d, end: null };
+    } else {
+      next = { start, end: d };
+    }
+    onChange(next);
+    if (next.start && next.end) {
+      onConfirm?.();
+    }
+  };
+
+  const handleChip = (d: Date) => {
+    Haptics.selectionAsync().catch(() => {});
+    const start = d;
+    const end = new Date(d);
+    end.setDate(end.getDate() + 1);
+    onChange({ start, end });
     onConfirm?.();
   };
 
@@ -81,7 +110,7 @@ export function WhenContent({ selected, onSelect, onConfirm }: WhenContentProps)
             key={m.toISOString()}
             month={m}
             today={today}
-            selected={selected}
+            range={range}
             onSelect={handlePick}
             locale={locale}
           />
@@ -90,12 +119,13 @@ export function WhenContent({ selected, onSelect, onConfirm }: WhenContentProps)
 
       <View style={styles.chipsRow}>
         {quickChips.map((c) => {
-          const isActive = !!selected && c.value.toDateString() === selected.toDateString();
+          const isActive =
+            !!range.start && sameDay(c.value, range.start) && range.end !== null;
           return (
             <PressableScale
               key={c.day}
               scaleTo={0.95}
-              onPress={() => handlePick(c.value)}
+              onPress={() => handleChip(c.value)}
               style={isActive ? [styles.chip, styles.chipActive] : styles.chip}>
               <ThemedText
                 numberOfLines={1}
@@ -123,13 +153,13 @@ export function WhenContent({ selected, onSelect, onConfirm }: WhenContentProps)
 function MonthGrid({
   month,
   today,
-  selected,
+  range,
   onSelect,
   locale,
 }: {
   month: Date;
   today: Date;
-  selected: Date | null;
+  range: DateRange;
   onSelect: (d: Date) => void;
   locale: 'ar' | 'en';
 }) {
@@ -142,6 +172,8 @@ function MonthGrid({
     cells.push({ day: d, date: new Date(month.getFullYear(), month.getMonth(), d) });
   }
 
+  const { start, end } = range;
+
   return (
     <View style={monthStyles.wrap}>
       <ThemedText
@@ -152,23 +184,44 @@ function MonthGrid({
         {cells.map((c, i) => {
           if (!c) return <View key={i} style={monthStyles.cell} />;
           const past = c.date < today;
-          const isSelected = selected && c.date.toDateString() === selected.toDateString();
+          const t = c.date.getTime();
+          const isStart = !!start && sameDay(c.date, start);
+          const isEnd = !!end && sameDay(c.date, end);
+          const isEndpoint = isStart || isEnd;
+          const inBetween =
+            !!start &&
+            !!end &&
+            t > start.getTime() &&
+            t < end.getTime();
+          const hasRange = !!start && !!end;
+          const showRangeBg = inBetween || (hasRange && isEndpoint);
+
           return (
             <Pressable
               key={i}
               onPress={() => !past && onSelect(c.date)}
               style={monthStyles.cell}
               disabled={past}>
+              {showRangeBg ? (
+                <View
+                  style={[
+                    monthStyles.rangeFill,
+                    isStart && monthStyles.rangeFillStart,
+                    isEnd && monthStyles.rangeFillEnd,
+                  ]}
+                  pointerEvents="none"
+                />
+              ) : null}
               <View
                 style={[
                   monthStyles.dayDisc,
-                  isSelected && monthStyles.dayDiscSelected,
+                  isEndpoint && monthStyles.dayDiscSelected,
                 ]}>
                 <ThemedText
                   style={[
                     monthStyles.dayText,
                     past && monthStyles.dayPast,
-                    isSelected && monthStyles.daySelected,
+                    isEndpoint && monthStyles.daySelected,
                     { fontFamily: fontFamilyFor('bold', locale) },
                   ]}>
                   {c.day}
@@ -243,6 +296,21 @@ const monthStyles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     color: Colors.light.textMuted,
+  },
+  rangeFill: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -18,
+    height: 36,
+    left: 0,
+    right: 0,
+    backgroundColor: '#EFEFEF',
+  },
+  rangeFillStart: {
+    insetInlineStart: '50%',
+  },
+  rangeFillEnd: {
+    insetInlineEnd: '50%',
   },
   dayDisc: {
     width: 36,

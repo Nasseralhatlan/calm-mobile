@@ -20,6 +20,7 @@ import { CapacityPills } from '@/components/capacity-pills';
 import { DateRangePills } from '@/components/date-range-pills';
 import { FloatingCircleButton } from '@/components/floating-circle-button';
 import { HeartIcon } from '@/components/icons/heart-icon';
+import { ShareIcon } from '@/components/icons/share-icon';
 import { HeroCarousel } from '@/components/hero-carousel';
 import { HostCard } from '@/components/host-card';
 import { MapPreview } from '@/components/map-preview';
@@ -68,6 +69,25 @@ export default function ListingDetailScreen() {
       [0, 1],
       Extrapolation.CLAMP,
     ),
+  }));
+
+  const headerTitleStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      scrollY.value,
+      [HERO_FADE_DISTANCE - 40, HERO_FADE_DISTANCE + 10],
+      [0, 1],
+      Extrapolation.CLAMP,
+    ),
+    transform: [
+      {
+        translateY: interpolate(
+          scrollY.value,
+          [HERO_FADE_DISTANCE - 40, HERO_FADE_DISTANCE + 10],
+          [10, 0],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
   }));
 
   const badgeStyle = useAnimatedStyle(() => ({
@@ -124,8 +144,19 @@ export default function ListingDetailScreen() {
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustContentInsets={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 110 }}>
-        <HeroCarousel photos={listing.photos} scrollY={scrollY} />
+        <HeroCarousel
+          photos={listing.photos}
+          scrollY={scrollY}
+          onPhotoPress={() =>
+            router.push({
+              pathname: '/listing/[id]/photos',
+              params: { id: listing.id },
+            })
+          }
+        />
 
         <View style={styles.titleBlock}>
           <ThemedText
@@ -271,13 +302,35 @@ export default function ListingDetailScreen() {
           <BlurView intensity={70} tint="light" style={StyleSheet.absoluteFillObject} />
           <View style={styles.topBarTint} />
         </Animated.View>
+        <Animated.View
+          style={[styles.headerTitleWrap, headerTitleStyle]}
+          pointerEvents="none">
+          <ThemedText
+            numberOfLines={1}
+            style={[styles.headerTitle, { fontFamily: fontFamilyFor('bold', locale) }]}>
+            {t(listing.title)}
+          </ThemedText>
+          <View style={styles.headerRatingRow}>
+            <IconSymbol name="star.fill" size={11} color={Colors.light.text} />
+            <ThemedText
+              style={[styles.headerRating, { fontFamily: fontFamilyFor('bold', locale) }]}>
+              {' '}
+              {listing.rating.average.toFixed(2)}
+            </ThemedText>
+            <ThemedText
+              style={[styles.headerRatingCount, { fontFamily: fontFamilyFor('regular', locale) }]}>
+              {' '}
+              · {listing.rating.count} {t({ ar: 'تقييم', en: 'reviews' })}
+            </ThemedText>
+          </View>
+        </Animated.View>
         <View style={styles.topBar}>
           <FloatingCircleButton onPress={() => router.back()}>
             <IconSymbol name="chevron.left" size={18} color={Colors.light.text} />
           </FloatingCircleButton>
           <View style={{ flex: 1 }} />
           <FloatingCircleButton onPress={() => {}}>
-            <IconSymbol name="square.and.arrow.up" size={16} color={Colors.light.text} />
+            <ShareIcon size={18} stroke={Colors.light.text} strokeWidth={1.6} />
           </FloatingCircleButton>
           <View style={{ width: Spacing[2] }} />
           <FloatingCircleButton onPress={handleLike}>
@@ -332,8 +385,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing[4],
-    paddingTop: Spacing[2],
-    paddingBottom: Spacing[2],
+    paddingTop: Spacing[3],
+    paddingBottom: Spacing[3],
+  },
+  headerTitleWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: Spacing[2],
+    paddingHorizontal: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 15,
+    lineHeight: 19,
+    color: Colors.light.text,
+    maxWidth: '100%',
+  },
+  headerRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 1,
+  },
+  headerRating: {
+    fontSize: 11,
+    lineHeight: 14,
+    color: Colors.light.text,
+  },
+  headerRatingCount: {
+    fontSize: 11,
+    lineHeight: 14,
+    color: Colors.light.textMuted,
   },
 
   badgeLayer: {

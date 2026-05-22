@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: Colors.light.border,
     paddingHorizontal: Spacing[5],
-    paddingTop: Spacing[3],
+    paddingTop: Spacing[4],
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.05,

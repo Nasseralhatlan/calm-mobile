@@ -18,7 +18,7 @@ import { MagnifierIcon } from '@/components/icons/magnifier-icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { ExpandableCard } from '@/components/search/expandable-card';
 import { WhereContent } from '@/components/search/where-content';
-import { WhenContent } from '@/components/search/when-content';
+import { WhenContent, type DateRange } from '@/components/search/when-content';
 import { WhoContent, type GuestCounts } from '@/components/search/who-content';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -37,7 +37,7 @@ export default function SearchModal() {
 
   const [expanded, setExpanded] = useState<CardKey>('when');
   const [city, setCity] = useState(t({ ar: 'الرياض', en: 'Riyadh' }));
-  const [date, setDate] = useState<Date | null>(null);
+  const [range, setRange] = useState<DateRange>({ start: null, end: null });
   const [guests, setGuests] = useState<GuestCounts>(DEFAULT_GUESTS);
   const [searchFocused, setSearchFocused] = useState(false);
   const [resetKey, setResetKey] = useState(0);
@@ -65,7 +65,7 @@ export default function SearchModal() {
   const reset = () => {
     Haptics.selectionAsync().catch(() => {});
     setCity(t({ ar: 'الرياض', en: 'Riyadh' }));
-    setDate(null);
+    setRange({ start: null, end: null });
     setGuests(DEFAULT_GUESTS);
     setSearchFocused(false);
     setExpanded('when');
@@ -79,7 +79,8 @@ export default function SearchModal() {
       pathname: '/results',
       params: {
         city,
-        date: date ? date.toISOString() : '',
+        startDate: range.start ? range.start.toISOString() : '',
+        endDate: range.end ? range.end.toISOString() : '',
         guests: String(totalGuests),
       },
     });
@@ -110,13 +111,14 @@ export default function SearchModal() {
   }, [guests, t]);
 
   const dateLabel = useMemo(() => {
-    if (!date) return t({ ar: 'اختر التاريخ', en: 'Pick a date' });
-    const day = date.toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', {
-      weekday: 'long',
-    });
-    const md = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-    return `${day} ${md}`;
-  }, [date, locale, t]);
+    if (!range.start) return t({ ar: 'اختر التواريخ', en: 'Pick dates' });
+    const fmt = (d: Date) =>
+      d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+    if (!range.end) {
+      return `${fmt(range.start)} — ${t({ ar: 'اختر المغادرة', en: 'Pick check-out' })}`;
+    }
+    return `${fmt(range.start)} — ${fmt(range.end)}`;
+  }, [range, t]);
 
   const overlayStyle = useAnimatedStyle(() => ({ opacity: overlay.value }));
   const contentStyle = useAnimatedStyle(() => ({
@@ -176,8 +178,8 @@ export default function SearchModal() {
               expanded={expanded === 'when'}
               onToggle={() => toggle('when')}>
               <WhenContent
-                selected={date}
-                onSelect={setDate}
+                range={range}
+                onChange={setRange}
                 onConfirm={() => setExpanded('who')}
               />
             </ExpandableCard>

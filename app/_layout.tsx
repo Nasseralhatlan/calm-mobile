@@ -91,6 +91,13 @@ export default function RootLayout() {
                     }}
                   />
                   <Stack.Screen
+                    name="listing/[id]/photos"
+                    options={{
+                      headerShown: false,
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
                     name="listing/[id]/amenities"
                     options={{
                       presentation: 'transparentModal',
