@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MagnifierIcon } from '@/components/icons/magnifier-icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { ExpandableCard } from '@/components/search/expandable-card';
+import { HelpContent, type HelpAnswers } from '@/components/search/help-content';
 import { WhereContent } from '@/components/search/where-content';
 import { WhenContent, type DateRange } from '@/components/search/when-content';
 import { WhoContent, type GuestCounts } from '@/components/search/who-content';
@@ -25,9 +26,10 @@ import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
 import { fireHaptic } from '@/lib/haptics';
 import { useLocale, useT } from '@/lib/i18n';
 
-type CardKey = 'where' | 'when' | 'who';
+type CardKey = 'where' | 'when' | 'who' | 'help';
 
 const DEFAULT_GUESTS: GuestCounts = { total: 5 };
+const DEFAULT_HELP: HelpAnswers = { audience: null, activity: null, vibe: null };
 
 export default function SearchModal() {
   const router = useRouter();
@@ -39,6 +41,7 @@ export default function SearchModal() {
   const [city, setCity] = useState(t({ ar: 'الرياض', en: 'Riyadh' }));
   const [range, setRange] = useState<DateRange>({ start: null, end: null });
   const [guests, setGuests] = useState<GuestCounts>(DEFAULT_GUESTS);
+  const [help, setHelp] = useState<HelpAnswers>(DEFAULT_HELP);
   const [searchFocused, setSearchFocused] = useState(false);
   const [resetKey, setResetKey] = useState(0);
 
@@ -66,6 +69,7 @@ export default function SearchModal() {
     setCity(t({ ar: 'الرياض', en: 'Riyadh' }));
     setRange({ start: null, end: null });
     setGuests(DEFAULT_GUESTS);
+    setHelp(DEFAULT_HELP);
     setSearchFocused(false);
     setExpanded('when');
     setResetKey((k) => k + 1);
@@ -79,6 +83,9 @@ export default function SearchModal() {
         startDate: range.start ? range.start.toISOString() : '',
         endDate: range.end ? range.end.toISOString() : '',
         guests: String(guests.total),
+        ...(help.audience ? { audience: help.audience } : {}),
+        ...(help.activity ? { activity: help.activity } : {}),
+        ...(help.vibe ? { vibe: help.vibe } : {}),
       },
     });
   };
@@ -94,6 +101,13 @@ export default function SearchModal() {
       en: guests.total === 1 ? 'guest' : 'guests',
     })}`;
   }, [guests, t]);
+
+  const helpLabel = useMemo(() => {
+    const picks = [help.audience, help.activity, help.vibe].filter(Boolean).length;
+    if (picks === 0) return t({ ar: 'اختياري', en: 'Optional' });
+    if (picks === 3) return t({ ar: 'تم اختيار التفضيلات', en: 'Preferences set' });
+    return t({ ar: `${picks} / 3`, en: `${picks} of 3` });
+  }, [help, t]);
 
   const dateLabel = useMemo(() => {
     if (!range.start) return t({ ar: 'اختر التواريخ', en: 'Pick dates' });
@@ -171,7 +185,23 @@ export default function SearchModal() {
               <WhenContent
                 range={range}
                 onChange={setRange}
-                onConfirm={() => setExpanded('who')}
+                onConfirm={() => setExpanded('help')}
+              />
+            </ExpandableCard>
+
+            <ExpandableCard
+              label={t({ ar: 'نساعدك تختار الأنسب ؟', en: 'Let us help you find the best ?' })}
+              value={helpLabel}
+              expanded={expanded === 'help'}
+              onToggle={() => toggle('help')}>
+              <HelpContent
+                answers={help}
+                onChange={setHelp}
+                onSkip={() => {
+                  setHelp(DEFAULT_HELP);
+                  setExpanded('who');
+                }}
+                onComplete={() => setExpanded('who')}
               />
             </ExpandableCard>
 
