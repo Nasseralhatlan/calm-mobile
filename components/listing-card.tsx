@@ -29,9 +29,11 @@ const DEFAULT_CARD_WIDTH = SCREEN_W - Spacing[5] * 2;
 
 interface ListingCardProps {
   listing: Listing;
+  startDate?: string;
+  endDate?: string;
 }
 
-export function ListingCard({ listing }: ListingCardProps) {
+export function ListingCard({ listing, startDate, endDate }: ListingCardProps) {
   const t = useT();
   const { locale } = useLocale();
   const isRTL = locale === 'ar';
@@ -54,8 +56,21 @@ export function ListingCard({ listing }: ListingCardProps) {
   };
 
   return (
-    <Link href={`/listing/${listing.id}`} asChild>
-      <PressableScale scaleTo={0.985} style={styles.card}>
+    <Link
+      href={{
+        pathname: '/listing/[id]',
+        params: {
+          id: listing.id,
+          ...(startDate ? { startDate } : {}),
+          ...(endDate ? { endDate } : {}),
+        },
+      }}
+      asChild>
+      <PressableScale
+        scaleTo={0.985}
+        haptic="forward"
+        unstable_pressDelay={120}
+        style={styles.card}>
         <PhotoCarousel
           photos={listing.photos}
           liked={liked}
@@ -144,7 +159,8 @@ function PhotoCarousel({
         showsHorizontalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        bounces={false}>
+        bounces
+        alwaysBounceHorizontal>
         {photos.map((url) => (
           <Image
             key={url}

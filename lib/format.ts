@@ -21,6 +21,17 @@ export function formatPriceSR(halalas: number): string {
   return `${num} SR`;
 }
 
+// Always renders the number in Latin digits even in Arabic locale.
+// Output looks like: "SR 2,660" (or "SR 2,660.98" if you pass decimals=2).
+export function formatMoneyEn(halalas: number, decimals: number = 0): string {
+  const sar = halalas / 100;
+  const num = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(sar);
+  return `SR ${num}`;
+}
+
 export function formatDateRange(checkIn: string, checkOut: string, locale: Locale): string {
   const start = new Date(checkIn);
   const end = new Date(checkOut);

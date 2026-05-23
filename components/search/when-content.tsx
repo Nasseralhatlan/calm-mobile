@@ -103,6 +103,7 @@ export function WhenContent({ range, onChange, onConfirm }: WhenContentProps) {
       </View>
 
       <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}>
         {months.map((m) => (
@@ -243,6 +244,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.light.divider,
   },
+  scrollView: { flex: 1 },
   scroll: { paddingBottom: Spacing[4] },
   chipsRow: {
     flexDirection: 'row',

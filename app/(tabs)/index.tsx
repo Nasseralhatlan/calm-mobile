@@ -1,5 +1,4 @@
 import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useMemo, useRef } from 'react';
@@ -44,7 +43,6 @@ export default function ExploreScreen() {
   const tabBarHeight = insets.bottom * 0.75 + 64;
 
   const openSearch = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     router.push('/search');
   };
 
@@ -79,7 +77,11 @@ export default function ExploreScreen() {
               style={styles.logo}
               contentFit="contain"
             />
-            <PressableScale scaleTo={0.96} style={styles.cityPill}>
+            <PressableScale
+              scaleTo={0.96}
+              haptic="select"
+              onPress={() => router.push('/cities')}
+              style={styles.cityPill}>
               <ThemedText variant="bodyMedium" style={styles.cityPillText}>{cityLabel}</ThemedText>
               <IconSymbol name="chevron.left" size={14} color={palette.text} style={{ transform: [{ rotate: '-90deg' }] }} />
             </PressableScale>
@@ -95,7 +97,15 @@ export default function ExploreScreen() {
         ]}>
         <EntranceItem delay={60}>
           <View style={styles.greetingWrap}>
-            <ThemedText variant="title" style={styles.greeting}>
+            <ThemedText
+              variant="title"
+              style={[
+                styles.greeting,
+                {
+                  textAlign: isRTL ? 'right' : 'left',
+                  writingDirection: isRTL ? 'rtl' : 'ltr',
+                },
+              ]}>
               {t({ ar: `اهــــلا ${firstName}`, en: `Hello, ${firstName}` })}
             </ThemedText>
           </View>
@@ -172,7 +182,7 @@ export default function ExploreScreen() {
 
       <View pointerEvents="box-none" style={[styles.fabWrap, { bottom: tabBarHeight + Spacing[5] }]}>
         <EntranceItem delay={950} from={16}>
-          <PressableScale scaleTo={0.95} onPress={openSearch} style={styles.fab}>
+          <PressableScale scaleTo={0.95} onPress={openSearch} haptic="forward" style={styles.fab}>
             <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFillObject} />
             <View style={styles.fabTint} />
             <SearchPlusIcon size={16} color="#FFFFFF" />
@@ -198,14 +208,37 @@ function Section({
   headerDelay?: number;
   children: React.ReactNode;
 }) {
+  const { locale } = useLocale();
+  const isRTL = locale === 'ar';
   return (
     <View style={styles.section}>
       <EntranceItem delay={headerDelay}>
-        <View style={styles.sectionHeader}>
+        <View
+          style={[
+            styles.sectionHeader,
+            // JSX order is [chip, title]. To place title at the start
+            // (right in RTL, left in LTR), use row in RTL (chip at left,
+            // title at right) and row-reverse in LTR (title at left, chip
+            // at right).
+            { flexDirection: isRTL ? 'row' : 'row-reverse' },
+          ]}>
           <PressableScale scaleTo={0.92} onPress={onMore} style={styles.moreChip}>
-            <IconSymbol name="chevron.left" size={16} color={Colors.light.text} />
+            <IconSymbol
+              name="chevron.left"
+              size={16}
+              color={Colors.light.text}
+              style={isRTL ? undefined : { transform: [{ rotate: '180deg' }] }}
+            />
           </PressableScale>
-          <ThemedText variant="heading" style={styles.sectionTitle}>
+          <ThemedText
+            variant="heading"
+            style={[
+              styles.sectionTitle,
+              {
+                textAlign: isRTL ? 'right' : 'left',
+                writingDirection: isRTL ? 'rtl' : 'ltr',
+              },
+            ]}>
             {title}
           </ThemedText>
         </View>
@@ -276,7 +309,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing[5],
     marginTop: Spacing[5],
   },
-  greeting: { textAlign: 'right', writingDirection: 'rtl', fontSize: 16, lineHeight: 22 },
+  greeting: { fontSize: 16, lineHeight: 22 },
 
   grid: {
     paddingHorizontal: Spacing[5],
@@ -317,7 +350,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing[5],
     paddingBottom: Spacing[4],
   },
-  sectionTitle: { writingDirection: 'rtl', fontSize: 16, lineHeight: 22 },
+  sectionTitle: { fontSize: 16, lineHeight: 22 },
   moreChip: {
     width: 36,
     height: 36,

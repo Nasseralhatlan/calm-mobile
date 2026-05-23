@@ -1,10 +1,10 @@
-import * as Haptics from 'expo-haptics';
 import { type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Radius, Spacing } from '@/constants/theme';
+import type { HapticKind } from '@/lib/haptics';
 
 type Variant = 'primary' | 'secondary' | 'ghost';
 type Size = 'lg' | 'md' | 'sm';
@@ -18,7 +18,7 @@ interface ButtonProps {
   leading?: ReactNode;
   trailing?: ReactNode;
   fullWidth?: boolean;
-  haptic?: boolean;
+  haptic?: HapticKind;
 }
 
 export function Button({
@@ -30,7 +30,7 @@ export function Button({
   leading,
   trailing,
   fullWidth = false,
-  haptic = true,
+  haptic = 'tap',
 }: ButtonProps) {
   const palette = Colors.light;
 
@@ -52,9 +52,9 @@ export function Button({
   return (
     <PressableScale
       disabled={disabled}
+      haptic={haptic}
       onPress={() => {
         if (disabled) return;
-        if (haptic) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onPress?.();
       }}
       style={{

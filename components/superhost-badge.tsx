@@ -18,7 +18,7 @@ export function SuperhostBadge({ size = 30, color = GOLD }: SuperhostBadgeProps)
         styles.clip,
         { width: size, height: size, borderRadius: size / 2 },
       ]}>
-      <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFillObject} />
+      <BlurView intensity={30} tint="light" style={StyleSheet.absoluteFillObject} />
       <View style={[styles.tint, { borderRadius: size / 2 }]} />
       <LaurelIcon size={iconSize} color={color} />
     </View>
@@ -33,6 +33,6 @@ const styles = StyleSheet.create({
   },
   tint: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
 });

@@ -1,5 +1,4 @@
 import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useEffect, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -17,6 +16,7 @@ import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
+import { fireHaptic } from '@/lib/haptics';
 import { useLocale } from '@/lib/i18n';
 
 interface BlurredModalShellProps {
@@ -38,7 +38,6 @@ export function BlurredModalShell({ title, children }: BlurredModalShellProps) {
   }, [overlay, scale]);
 
   const close = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     scale.value = withTiming(0.96, { duration: 220, easing: Easing.in(Easing.cubic) });
     overlay.value = withTiming(
       0,
@@ -58,7 +57,13 @@ export function BlurredModalShell({ title, children }: BlurredModalShellProps) {
     <Animated.View style={[StyleSheet.absoluteFill, overlayStyle]}>
       <BlurView intensity={95} tint="light" style={StyleSheet.absoluteFill} />
       <View style={styles.tint} pointerEvents="none" />
-      <Pressable style={StyleSheet.absoluteFill} onPress={close} />
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={() => {
+          fireHaptic('back');
+          close();
+        }}
+      />
 
       <Animated.View
         style={[
@@ -68,7 +73,7 @@ export function BlurredModalShell({ title, children }: BlurredModalShellProps) {
         ]}
         pointerEvents="box-none">
         <View style={styles.headerRow} pointerEvents="box-none">
-          <PressableScale onPress={close} scaleTo={0.88} style={styles.closeBtn}>
+          <PressableScale onPress={close} scaleTo={0.88} haptic="back" style={styles.closeBtn}>
             <IconSymbol name="xmark" size={18} color={Colors.light.text} />
           </PressableScale>
           <View style={styles.titleWrap}>

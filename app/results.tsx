@@ -1,5 +1,4 @@
 import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
@@ -79,22 +78,18 @@ export default function ResultsScreen() {
   }, [dateLabel, guestCount, t]);
 
   const goHome = () => {
-    Haptics.selectionAsync().catch(() => {});
     router.dismissAll();
   };
 
   const openFilters = () => {
-    Haptics.selectionAsync().catch(() => {});
     router.push('/filters');
   };
 
   const openSearch = () => {
-    Haptics.selectionAsync().catch(() => {});
     router.push('/search');
   };
 
   const openQuickFilters = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     router.push('/quick-filters');
   };
 
@@ -106,7 +101,15 @@ export default function ResultsScreen() {
         data={loading ? Array.from({ length: 3 }) : results}
         keyExtractor={(item, i) => (loading ? `s${i}` : `${(item as Listing).id}-${i}`)}
         renderItem={({ item }) =>
-          loading ? <SkeletonCard /> : <ListingCard listing={item as Listing} />
+          loading ? (
+            <SkeletonCard />
+          ) : (
+            <ListingCard
+              listing={item as Listing}
+              startDate={startDate || undefined}
+              endDate={endDate || undefined}
+            />
+          )
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
@@ -125,13 +128,14 @@ export default function ResultsScreen() {
         <BlurView intensity={70} tint="light" style={StyleSheet.absoluteFillObject} />
         <View style={styles.headerTint} pointerEvents="none" />
         <View style={styles.headerRow}>
-          <PressableScale onPress={goHome} scaleTo={0.88} style={styles.iconBtn}>
+          <PressableScale onPress={goHome} scaleTo={0.88} haptic="back" style={styles.iconBtn}>
             <IconSymbol name="chevron.left" size={20} color={Colors.light.text} />
           </PressableScale>
 
           <PressableScale
             onPress={openSearch}
             scaleTo={0.97}
+            haptic="select"
             style={styles.summaryPill}>
             <ThemedText
               style={[styles.summaryTitle, { fontFamily: fontFamilyFor('bold', locale) }]}
@@ -213,6 +217,8 @@ const styles = StyleSheet.create({
   },
   summaryPill: {
     flex: 1,
+    minHeight: 56,
+    justifyContent: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 999,
     paddingHorizontal: Spacing[5],

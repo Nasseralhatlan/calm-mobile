@@ -1,3 +1,4 @@
+import { BlurView } from 'expo-blur';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -19,6 +20,8 @@ export function ReserveBar({ halalas, onReserve }: ReserveBarProps) {
 
   return (
     <View style={[styles.wrap, { paddingBottom: insets.bottom + Spacing[2] }]}>
+      <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFillObject} />
+      <View style={styles.tint} pointerEvents="none" />
       <View style={styles.row}>
         <View style={styles.priceCol}>
           <ThemedText
@@ -30,7 +33,7 @@ export function ReserveBar({ halalas, onReserve }: ReserveBarProps) {
             {t({ ar: 'لليلة', en: 'per night' })}
           </ThemedText>
         </View>
-        <PressableScale onPress={onReserve} scaleTo={0.96} style={styles.cta}>
+        <PressableScale onPress={onReserve} scaleTo={0.96} haptic="forward" style={styles.cta}>
           <ThemedText
             style={[styles.ctaText, { fontFamily: fontFamilyFor('medium', locale) }]}>
             {t({ ar: 'احجز الآن', en: 'Reserve' })}
@@ -47,9 +50,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.light.border,
+    overflow: 'hidden',
     paddingHorizontal: Spacing[5],
     paddingTop: Spacing[4],
     shadowColor: '#000000',
@@ -57,6 +58,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 25,
     elevation: 6,
+  },
+  tint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   row: {
     flexDirection: 'row',

@@ -11,6 +11,7 @@ import { getListing } from '@/data/listings';
 import { SERVICES } from '@/data/services';
 import type { AddOnService } from '@/data/types';
 import { formatMoney, nightsBetween } from '@/lib/format';
+import { fireHaptic } from '@/lib/haptics';
 import { useLocale, useT } from '@/lib/i18n';
 import { STR } from '@/lib/strings';
 
@@ -65,6 +66,7 @@ export default function ReserveScreen() {
   }
 
   const bumpService = (id: string, delta: number) => {
+    fireHaptic('select');
     setServiceQty((prev) => {
       const cur = prev[id] ?? 0;
       const next = Math.max(0, cur + delta);
@@ -80,7 +82,7 @@ export default function ReserveScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <IconButton name="xmark" size={20} onPress={() => router.back()} />
+        <IconButton name="xmark" size={20} haptic="back" onPress={() => router.back()} />
         <ThemedText variant="bodyMedium" style={{ flex: 1, textAlign: 'center' }}>
           {t(STR.reserve.title)}
         </ThemedText>
@@ -202,7 +204,7 @@ export default function ReserveScreen() {
 
       <SafeAreaView style={styles.footer} edges={['bottom']}>
         <View style={styles.footerInner}>
-          <Button label={t(STR.reserve.confirm)} size="lg" fullWidth onPress={onConfirm} />
+          <Button label={t(STR.reserve.confirm)} size="lg" fullWidth haptic="forward" onPress={onConfirm} />
         </View>
       </SafeAreaView>
     </SafeAreaView>
@@ -223,7 +225,10 @@ function Stepper({
   return (
     <View style={styles.qtyControls}>
       <Pressable
-        onPress={() => onChange(Math.max(min, value - 1))}
+        onPress={() => {
+          fireHaptic('select');
+          onChange(Math.max(min, value - 1));
+        }}
         style={[styles.qtyBtn, value <= min && styles.qtyBtnDisabled]}>
         <ThemedText variant="bodyMedium">−</ThemedText>
       </Pressable>
@@ -231,7 +236,10 @@ function Stepper({
         {value}
       </ThemedText>
       <Pressable
-        onPress={() => onChange(Math.min(max, value + 1))}
+        onPress={() => {
+          fireHaptic('select');
+          onChange(Math.min(max, value + 1));
+        }}
         style={[styles.qtyBtn, value >= max && styles.qtyBtnDisabled]}>
         <ThemedText variant="bodyMedium">+</ThemedText>
       </Pressable>

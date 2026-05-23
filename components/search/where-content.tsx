@@ -64,7 +64,14 @@ export function WhereContent({ value, onChange, onFocusChange, onConfirm }: Wher
       />
 
       <ThemedText
-        style={[styles.subtitle, { fontFamily: fontFamilyFor('regular', locale) }]}>
+        style={[
+          styles.subtitle,
+          {
+            fontFamily: fontFamilyFor('regular', locale),
+            textAlign: locale === 'ar' ? 'right' : 'left',
+            writingDirection: locale === 'ar' ? 'rtl' : 'ltr',
+          },
+        ]}>
         {t({ ar: 'اشهر الوجهات', en: 'Popular destinations' })}
       </ThemedText>
 
@@ -119,8 +126,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     color: Colors.light.textMuted,
-    textAlign: 'right',
-    writingDirection: 'rtl',
     marginTop: Spacing[3],
   },
   list: {

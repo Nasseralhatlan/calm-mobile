@@ -26,9 +26,10 @@ interface HeroCarouselProps {
   photos: string[];
   scrollY?: SharedValue<number>;
   onPhotoPress?: (index: number) => void;
+  bottomInset?: number;
 }
 
-export function HeroCarousel({ photos, scrollY, onPhotoPress }: HeroCarouselProps) {
+export function HeroCarousel({ photos, scrollY, onPhotoPress, bottomInset = 0 }: HeroCarouselProps) {
   const [page, setPage] = useState(0);
   const scrollX = useSharedValue(0);
   const pageIndex = useDerivedValue(() => Math.round(scrollX.value / SCREEN_W));
@@ -102,13 +103,17 @@ export function HeroCarousel({ photos, scrollY, onPhotoPress }: HeroCarouselProp
         </AnimatedGHScrollView>
       </Animated.View>
 
-      <View style={styles.dotsWrap} pointerEvents="none">
+      <View
+        style={[styles.dotsWrap, { bottom: Spacing[4] + bottomInset }]}
+        pointerEvents="none">
         {photos.map((_, i) => (
           <Dot key={i} index={i} pageIndex={pageIndex} />
         ))}
       </View>
 
-      <View style={styles.counter} pointerEvents="none">
+      <View
+        style={[styles.counter, { bottom: Spacing[4] + bottomInset }]}
+        pointerEvents="none">
         <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFillObject} />
         <View style={styles.counterTint} />
         <ThemedText variant="caption" style={styles.counterText}>
@@ -152,7 +157,6 @@ const styles = StyleSheet.create({
   },
   dotsWrap: {
     position: 'absolute',
-    bottom: Spacing[4],
     alignSelf: 'center',
     flexDirection: 'row',
     gap: 5,
@@ -167,7 +171,6 @@ const styles = StyleSheet.create({
   },
   counter: {
     position: 'absolute',
-    bottom: Spacing[4],
     insetInlineEnd: Spacing[4],
     paddingHorizontal: Spacing[3],
     paddingVertical: 4,

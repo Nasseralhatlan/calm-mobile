@@ -60,6 +60,43 @@ export default function RootLayout() {
                     options={{ headerShown: false, animation: 'fade' }}
                   />
                   <Stack.Screen
+                    name="booking/[id]/dates"
+                    options={{
+                      presentation: 'modal',
+                      headerShown: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="booking/[id]/services"
+                    options={{
+                      headerShown: false,
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="booking/[id]/summary"
+                    options={{
+                      headerShown: false,
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
+                    name="booking/[id]/service/[sid]"
+                    options={{
+                      presentation: 'formSheet',
+                      sheetAllowedDetents: [0.5],
+                      sheetGrabberVisible: true,
+                      headerShown: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="booking-detail/[id]"
+                    options={{
+                      headerShown: false,
+                      animation: 'slide_from_right',
+                    }}
+                  />
+                  <Stack.Screen
                     name="search"
                     options={{
                       presentation: 'transparentModal',
@@ -91,6 +128,15 @@ export default function RootLayout() {
                     }}
                   />
                   <Stack.Screen
+                    name="cities"
+                    options={{
+                      presentation: 'formSheet',
+                      sheetAllowedDetents: [0.6],
+                      sheetGrabberVisible: true,
+                      headerShown: false,
+                    }}
+                  />
+                  <Stack.Screen
                     name="listing/[id]/photos"
                     options={{
                       headerShown: false,
@@ -100,19 +146,26 @@ export default function RootLayout() {
                   <Stack.Screen
                     name="listing/[id]/amenities"
                     options={{
-                      presentation: 'transparentModal',
-                      animation: 'none',
+                      presentation: 'formSheet',
+                      sheetAllowedDetents: [0.5],
+                      sheetGrabberVisible: true,
                       headerShown: false,
-                      contentStyle: { backgroundColor: 'transparent' },
+                    }}
+                  />
+                  <Stack.Screen
+                    name="listing/[id]/description"
+                    options={{
+                      presentation: 'formSheet',
+                      sheetAllowedDetents: [0.5],
+                      sheetGrabberVisible: true,
+                      headerShown: false,
                     }}
                   />
                   <Stack.Screen
                     name="listing/[id]/reviews"
                     options={{
-                      presentation: 'transparentModal',
-                      animation: 'none',
+                      presentation: 'modal',
                       headerShown: false,
-                      contentStyle: { backgroundColor: 'transparent' },
                     }}
                   />
                   <Stack.Screen

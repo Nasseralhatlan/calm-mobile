@@ -11,34 +11,44 @@ interface MapPreviewProps {
   coordinates: Coordinates;
   cityLabel: string;
   onPress?: () => void;
+  showOverlay?: boolean;
+  height?: number;
 }
 
 function staticMapUrl({ lat, lng }: Coordinates) {
   // OpenStreetMap-based static map (no API key). Mocked for v1; swap to Mapbox/Google in prod.
-  return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=13&size=720x320&maptype=mapnik&markers=${lat},${lng},red-pushpin`;
+  return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=14&size=1200x900&maptype=mapnik&markers=${lat},${lng},red-pushpin`;
 }
 
-export function MapPreview({ coordinates, cityLabel, onPress }: MapPreviewProps) {
+export function MapPreview({
+  coordinates,
+  cityLabel,
+  onPress,
+  showOverlay = true,
+  height = 180,
+}: MapPreviewProps) {
   const { locale } = useLocale();
   const t = useT();
   return (
-    <PressableScale scaleTo={0.985} onPress={onPress} style={styles.wrap}>
+    <PressableScale scaleTo={0.985} onPress={onPress} style={[styles.wrap, { height }]}>
       <Image
         source={{ uri: staticMapUrl(coordinates) }}
         style={styles.map}
         contentFit="cover"
         transition={200}
       />
-      <View style={styles.overlay}>
-        <ThemedText
-          style={[styles.location, { fontFamily: fontFamilyFor('bold', locale) }]}>
-          📍 {cityLabel}
-        </ThemedText>
-        <ThemedText
-          style={[styles.cta, { fontFamily: fontFamilyFor('medium', locale) }]}>
-          {t({ ar: 'اعرض الخريطة', en: 'View map' })}
-        </ThemedText>
-      </View>
+      {showOverlay ? (
+        <View style={styles.overlay}>
+          <ThemedText
+            style={[styles.location, { fontFamily: fontFamilyFor('bold', locale) }]}>
+            📍 {cityLabel}
+          </ThemedText>
+          <ThemedText
+            style={[styles.cta, { fontFamily: fontFamilyFor('medium', locale) }]}>
+            {t({ ar: 'اعرض الخريطة', en: 'View map' })}
+          </ThemedText>
+        </View>
+      ) : null}
     </PressableScale>
   );
 }
@@ -46,7 +56,6 @@ export function MapPreview({ coordinates, cityLabel, onPress }: MapPreviewProps)
 const styles = StyleSheet.create({
   wrap: {
     width: '100%',
-    height: 180,
     borderRadius: 16,
     borderCurve: 'continuous',
     overflow: 'hidden',

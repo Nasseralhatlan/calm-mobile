@@ -1,5 +1,4 @@
 import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -23,11 +22,12 @@ import { WhoContent, type GuestCounts } from '@/components/search/who-content';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
+import { fireHaptic } from '@/lib/haptics';
 import { useLocale, useT } from '@/lib/i18n';
 
 type CardKey = 'where' | 'when' | 'who';
 
-const DEFAULT_GUESTS: GuestCounts = { adults: 4, children: 2, infants: 0 };
+const DEFAULT_GUESTS: GuestCounts = { total: 5 };
 
 export default function SearchModal() {
   const router = useRouter();
@@ -51,7 +51,6 @@ export default function SearchModal() {
   }, [overlay, scale]);
 
   const close = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     scale.value = withTiming(0.96, { duration: 220, easing: Easing.in(Easing.cubic) });
     overlay.value = withTiming(
       0,
@@ -63,7 +62,7 @@ export default function SearchModal() {
   };
 
   const reset = () => {
-    Haptics.selectionAsync().catch(() => {});
+    fireHaptic('select');
     setCity(t({ ar: 'الرياض', en: 'Riyadh' }));
     setRange({ start: null, end: null });
     setGuests(DEFAULT_GUESTS);
@@ -73,15 +72,13 @@ export default function SearchModal() {
   };
 
   const handleSearch = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    const totalGuests = guests.adults + guests.children;
     router.replace({
       pathname: '/results',
       params: {
         city,
         startDate: range.start ? range.start.toISOString() : '',
         endDate: range.end ? range.end.toISOString() : '',
-        guests: String(totalGuests),
+        guests: String(guests.total),
       },
     });
   };
@@ -91,23 +88,11 @@ export default function SearchModal() {
   };
 
   const guestsLabel = useMemo(() => {
-    const total = guests.adults + guests.children;
-    if (!total) return t({ ar: 'أضف ضيوف', en: 'Add guests' });
-    const parts: string[] = [];
-    if (guests.adults > 0) {
-      parts.push(
-        `${guests.adults} ${t({ ar: 'بالغين', en: guests.adults === 1 ? 'adult' : 'adults' })}`,
-      );
-    }
-    if (guests.children > 0) {
-      parts.push(
-        `${guests.children} ${t({
-          ar: 'أطفال',
-          en: guests.children === 1 ? 'child' : 'children',
-        })}`,
-      );
-    }
-    return parts.join(t({ ar: ' و ', en: ', ' }));
+    if (!guests.total) return t({ ar: 'أضف ضيوف', en: 'Add guests' });
+    return `${guests.total} ${t({
+      ar: guests.total === 1 ? 'ضيف' : 'ضيف',
+      en: guests.total === 1 ? 'guest' : 'guests',
+    })}`;
   }, [guests, t]);
 
   const dateLabel = useMemo(() => {
@@ -129,7 +114,13 @@ export default function SearchModal() {
     <Animated.View style={[StyleSheet.absoluteFill, overlayStyle]}>
       <BlurView intensity={90 } tint="light" style={StyleSheet.absoluteFill} />
       <View style={styles.tint} pointerEvents="none" />
-      <Pressable style={StyleSheet.absoluteFill} onPress={close} />
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={() => {
+          fireHaptic('back');
+          close();
+        }}
+      />
 
       <Animated.View
         style={[
@@ -140,7 +131,7 @@ export default function SearchModal() {
         pointerEvents="box-none">
           {/* Header: X (start) + calm logo (absolutely centered) */}
           <View style={styles.header} pointerEvents="box-none">
-            <PressableScale onPress={close} scaleTo={0.88} style={styles.closeBtn}>
+            <PressableScale onPress={close} scaleTo={0.88} haptic="back" style={styles.closeBtn}>
               <IconSymbol name="xmark" size={18} color={Colors.light.text} />
             </PressableScale>
             <View style={styles.logoCenter} pointerEvents="none">
@@ -204,7 +195,7 @@ export default function SearchModal() {
                 {t({ ar: 'امسح الكل', en: 'Clear all' })}
               </ThemedText>
             </Pressable>
-            <PressableScale onPress={handleSearch} scaleTo={0.95} style={styles.searchBtn}>
+            <PressableScale onPress={handleSearch} scaleTo={0.95} haptic="forward" style={styles.searchBtn}>
               <MagnifierIcon size={16} color="#FFFFFF" />
               <ThemedText
                 style={[

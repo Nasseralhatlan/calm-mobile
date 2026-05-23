@@ -21,7 +21,7 @@ export const LISTINGS: Listing[] = [
     type: 'chalet',
     title: { ar: 'شاليه فاخر في الدرعية', en: 'Luxury chalet in Diriyah' },
     description: {
-      ar: 'شاليه عصري بمسبح خاص ومجلس واسع، مثالي للتجمعات العائلية وحفلات أعياد الميلاد.',
+      ar: 'شاليه عصري بمسبح خاص ومجلس واسع، مثالي للتجمعات العائلية ومناسبات أعياد الميلاد.',
       en: 'Modern chalet with private pool and spacious majlis — perfect for family gatherings and birthday parties.',
     },
     city: { ar: 'الرياض', en: 'Riyadh' },
@@ -141,7 +141,7 @@ export const LISTINGS: Listing[] = [
     type: 'rest_house',
     title: { ar: 'استراحة عائلية في الدمام', en: 'Family rest house in Dammam' },
     description: {
-      ar: 'استراحة مجهزة لحفلات الأطفال، منطقة ألعاب آمنة، ومسبح ضحل.',
+      ar: 'استراحة مجهزة لمناسبات الأطفال، منطقة ألعاب آمنة، ومسبح ضحل.',
       en: 'Set up for kids parties with a safe play area and a shallow pool.',
     },
     city: { ar: 'الدمام', en: 'Dammam' },
@@ -189,7 +189,7 @@ export const LISTINGS: Listing[] = [
     type: 'camp',
     title: { ar: 'مخيم قريب من الرياض', en: 'Camp near Riyadh' },
     description: {
-      ar: 'مخيم قريب ومناسب لحفلات نهاية الأسبوع، نار مخيم وألعاب رملية.',
+      ar: 'مخيم قريب ومناسب لتجمعات نهاية الأسبوع، نار مخيم وألعاب رملية.',
       en: 'Close-to-city camp for weekend events — bonfire and sand games.',
     },
     city: { ar: 'الرياض', en: 'Riyadh' },

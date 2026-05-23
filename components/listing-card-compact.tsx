@@ -45,7 +45,7 @@ export function ListingCardCompact({ listing }: ListingCardCompactProps) {
 
   return (
     <Link href={`/listing/${listing.id}`} asChild>
-      <PressableScale scaleTo={0.98} style={styles.card}>
+      <PressableScale scaleTo={0.98} haptic="forward" style={styles.card}>
         <View style={styles.imageWrap}>
           <Image
             source={{ uri: listing.photos[0] }}

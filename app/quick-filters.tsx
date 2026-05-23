@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { Stack, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,7 +14,6 @@ export default function QuickFiltersModal() {
   const { locale } = useLocale();
 
   const close = () => {
-    Haptics.selectionAsync().catch(() => {});
     router.back();
   };
 
@@ -24,7 +22,7 @@ export default function QuickFiltersModal() {
       <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.header}>
-          <PressableScale onPress={close} scaleTo={0.88} style={styles.closeBtn}>
+          <PressableScale onPress={close} scaleTo={0.88} haptic="back" style={styles.closeBtn}>
             <IconSymbol name="xmark" size={18} color={Colors.light.text} />
           </PressableScale>
           <View style={styles.titleCenter} pointerEvents="none">

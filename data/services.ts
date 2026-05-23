@@ -11,6 +11,7 @@ export const SERVICES: AddOnService[] = [
     },
     price: 12500,
     unit: 'per_guest',
+    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop',
   },
   {
     id: 's_catering_premium',
@@ -22,6 +23,7 @@ export const SERVICES: AddOnService[] = [
     },
     price: 22000,
     unit: 'per_guest',
+    imageUrl: 'https://images.unsplash.com/photo-1555244162-803834f70033?w=800&auto=format&fit=crop',
   },
   {
     id: 's_decor_balloons',
@@ -33,17 +35,19 @@ export const SERVICES: AddOnService[] = [
     },
     price: 80000,
     unit: 'flat',
+    imageUrl: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=800&auto=format&fit=crop',
   },
   {
     id: 's_decor_full',
     kind: 'decoration',
-    title: { ar: 'تنسيق كامل للحفلة', en: 'Full event styling' },
+    title: { ar: 'تنسيق كامل للمناسبة', en: 'Full event styling' },
     description: {
       ar: 'منسق محترف، إضاءة، ورود، ولوحة الترحيب.',
       en: 'Professional stylist, lighting, florals, and welcome signage.',
     },
     price: 220000,
     unit: 'flat',
+    imageUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&auto=format&fit=crop',
   },
   {
     id: 's_staff_servers',
@@ -55,28 +59,31 @@ export const SERVICES: AddOnService[] = [
     },
     price: 7500,
     unit: 'per_hour',
+    imageUrl: 'https://images.unsplash.com/photo-1559329007-40df8a9345d8?w=800&auto=format&fit=crop',
   },
   {
     id: 's_photo',
     kind: 'photography',
-    title: { ar: 'مصور للحفلة', en: 'Event photographer' },
+    title: { ar: 'مصور للمناسبة', en: 'Event photographer' },
     description: {
-      ar: 'مصور محترف يلتقط أهم لحظات حفلتك.',
+      ar: 'مصور محترف يلتقط أهم لحظات مناسبتك.',
       en: 'Professional photographer covering the key moments.',
     },
     price: 150000,
     unit: 'flat',
+    imageUrl: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=800&auto=format&fit=crop',
   },
   {
     id: 's_entertainment_dj',
     kind: 'entertainment',
     title: { ar: 'دي جي', en: 'DJ' },
     description: {
-      ar: 'منسق صوتيات لإحياء الحفل بقائمة موسيقى مخصصة لك.',
+      ar: 'منسق صوتيات لإحياء المناسبة بقائمة موسيقى مخصصة لك.',
       en: 'A DJ to set the mood with a custom playlist.',
     },
     price: 180000,
     unit: 'flat',
+    imageUrl: 'https://images.unsplash.com/photo-1571266028243-d220c9c3b31f?w=800&auto=format&fit=crop',
   },
 ];
 

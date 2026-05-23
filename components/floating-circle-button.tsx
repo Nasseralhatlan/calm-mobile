@@ -2,12 +2,14 @@ import { BlurView } from 'expo-blur';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { PressableScale } from '@/components/pressable-scale';
+import type { HapticKind } from '@/lib/haptics';
 
 interface FloatingCircleButtonProps {
   onPress?: () => void;
   size?: number;
   children: React.ReactNode;
   style?: ViewStyle;
+  haptic?: HapticKind;
 }
 
 export function FloatingCircleButton({
@@ -15,6 +17,7 @@ export function FloatingCircleButton({
   size = 38,
   children,
   style,
+  haptic = 'tap',
 }: FloatingCircleButtonProps) {
   const merged: ViewStyle[] = [
     styles.wrap,
@@ -22,9 +25,9 @@ export function FloatingCircleButton({
     ...(style ? [style] : []),
   ];
   return (
-    <PressableScale onPress={onPress} scaleTo={0.88} style={merged}>
+    <PressableScale onPress={onPress} scaleTo={0.88} haptic={haptic} style={merged}>
       <BlurView
-        intensity={70}
+        intensity={30}
         tint="light"
         style={[StyleSheet.absoluteFillObject, { borderRadius: size / 2 }]}
       />
@@ -42,6 +45,6 @@ const styles = StyleSheet.create({
   },
   tint: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
 });

@@ -13,13 +13,21 @@ interface SectionProps {
 
 export function Section({ title, divider = true, style, children }: SectionProps) {
   const { locale } = useLocale();
+  const isRTL = locale === 'ar';
   return (
     <>
       {divider ? <View style={styles.divider} /> : null}
       <View style={[styles.section, style]}>
         {title ? (
           <ThemedText
-            style={[styles.title, { fontFamily: fontFamilyFor('bold', locale) }]}>
+            style={[
+              styles.title,
+              {
+                fontFamily: fontFamilyFor('bold', locale),
+                textAlign: isRTL ? 'right' : 'left',
+                writingDirection: isRTL ? 'rtl' : 'ltr',
+              },
+            ]}>
             {title}
           </ThemedText>
         ) : null}
@@ -39,8 +47,6 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: Colors.light.text,
     marginBottom: Spacing[3],
-    textAlign: 'right',
-    writingDirection: 'rtl',
   },
   divider: {
     height: StyleSheet.hairlineWidth,

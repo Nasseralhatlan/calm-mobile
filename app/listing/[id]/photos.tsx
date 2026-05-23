@@ -1,5 +1,4 @@
 import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
 import { Image as ExpoImage } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -154,12 +153,10 @@ export default function ListingPhotosScreen() {
   }
 
   const close = () => {
-    Haptics.selectionAsync().catch(() => {});
     router.back();
   };
 
   const handleLike = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     toggle(listing.id);
   };
 
@@ -168,7 +165,6 @@ export default function ListingPhotosScreen() {
   };
 
   const scrollToSection = (key: string) => {
-    Haptics.selectionAsync().catch(() => {});
     const y = sectionOffsets.current[key];
     if (y !== undefined) {
       scrollRef.current?.scrollTo({ y: y - headerHeight - Spacing[2], animated: true });
@@ -235,7 +231,7 @@ export default function ListingPhotosScreen() {
         <BlurView intensity={70} tint="light" style={StyleSheet.absoluteFillObject} />
         <View style={styles.headerTint} pointerEvents="none" />
         <View style={[styles.headerRow, { marginTop: insets.top }]}>
-          <PressableScale onPress={close} scaleTo={0.88} style={styles.iconBtn}>
+          <PressableScale onPress={close} scaleTo={0.88} haptic="back" style={styles.iconBtn}>
             <IconSymbol name="chevron.left" size={20} color={Colors.light.text} />
           </PressableScale>
           <View style={styles.titleCenter} pointerEvents="none">
@@ -246,7 +242,7 @@ export default function ListingPhotosScreen() {
           </View>
           <View style={styles.topActions}>
             <PressableScale onPress={() => {}} scaleTo={0.88} style={styles.iconBtn}>
-              <ShareIcon size={18} stroke={Colors.light.text} strokeWidth={1.6} />
+              <ShareIcon size={18} stroke={Colors.light.text} strokeWidth={2.2} />
             </PressableScale>
             <PressableScale onPress={handleLike} scaleTo={0.88} style={styles.iconBtn}>
               <HeartIcon

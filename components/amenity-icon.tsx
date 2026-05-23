@@ -25,7 +25,11 @@ interface AmenityIconProps {
 
 export function AmenityIcon({ id, size = 22 }: AmenityIconProps) {
   return (
-    <ThemedText style={[styles.emoji, { fontSize: size, lineHeight: size + 2 }]}>
+    <ThemedText
+      style={[
+        styles.emoji,
+        { fontSize: size, lineHeight: size * 1.4, width: size * 1.5 },
+      ]}>
       {EMOJI[id]}
     </ThemedText>
   );

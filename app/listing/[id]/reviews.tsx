@@ -2,88 +2,110 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { BlurredModalShell } from '@/components/blurred-modal-shell';
+import { StarIcon } from '@/components/icons/star-icon';
+import { PlainModalShell } from '@/components/plain-modal-shell';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
+import { Spacing, fontFamilyFor } from '@/constants/theme';
 import { getListing } from '@/data/listings';
-import { getReviewsForListing } from '@/data/reviews';
+import { REVIEWS, getReviewsForListing } from '@/data/reviews';
 import { useLocale, useT } from '@/lib/i18n';
+
+const TEXT_PRIMARY = '#000000';
+const TEXT_SECONDARY = '#CECECE';
+const DIVIDER_COLOR = '#F4F4F4';
 
 export default function ReviewsModal() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { locale } = useLocale();
   const t = useT();
+  const isRTL = locale === 'ar';
+  const rowDir = isRTL ? 'row-reverse' : 'row';
+
   const listing = getListing(id);
-  const reviews = listing ? getReviewsForListing(listing.id) : [];
+  const own = listing ? getReviewsForListing(listing.id) : [];
+  const reviews = own.length > 0 ? own : REVIEWS;
+
+  const title = listing
+    ? `${listing.rating.average.toFixed(1)} · ${listing.rating.count} ${t({
+        ar: 'تقييم',
+        en: 'reviews',
+      })}`
+    : t({ ar: 'التقييمات', en: 'Reviews' });
 
   return (
-    <BlurredModalShell
-      title={
-        listing
-          ? `★ ${listing.rating.average.toFixed(2)} · ${listing.rating.count} ${t({
-              ar: 'تقييم',
-              en: 'reviews',
-            })}`
-          : t({ ar: 'التقييمات', en: 'Reviews' })
-      }>
+    <PlainModalShell title={title}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
-        {reviews.map((r) => (
-          <View key={r.id} style={styles.card}>
-            <View style={styles.head}>
+        {reviews.map((r, idx) => (
+          <View
+            key={r.id}
+            style={[styles.row, idx < reviews.length - 1 && styles.rowDivider]}>
+            <View style={[styles.head, { flexDirection: rowDir }]}>
               <Image source={{ uri: r.authorAvatarUrl }} style={styles.avatar} contentFit="cover" />
               <View style={{ flex: 1 }}>
                 <ThemedText
-                  style={[styles.name, { fontFamily: fontFamilyFor('bold', locale) }]}
-                  numberOfLines={1}>
+                  numberOfLines={1}
+                  style={[
+                    styles.name,
+                    { fontFamily: fontFamilyFor('bold', locale), textAlign: isRTL ? 'right' : 'left' },
+                  ]}>
                   {t(r.authorName)}
                 </ThemedText>
-                <ThemedText style={styles.stars}>{'★'.repeat(r.rating)}</ThemedText>
+                <View style={[styles.stars, { flexDirection: rowDir }]}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <StarIcon key={i} size={10} color={i < r.rating ? TEXT_PRIMARY : '#E5E5E5'} />
+                  ))}
+                </View>
               </View>
             </View>
             <ThemedText
-              style={[styles.body, { fontFamily: fontFamilyFor('regular', locale) }]}>
+              style={[
+                styles.body,
+                { fontFamily: fontFamilyFor('regular', locale), textAlign: isRTL ? 'right' : 'left' },
+              ]}>
               {t(r.text)}
             </ThemedText>
           </View>
         ))}
       </ScrollView>
-    </BlurredModalShell>
+    </PlainModalShell>
   );
 }
 
 const styles = StyleSheet.create({
-  list: { gap: Spacing[4], paddingBottom: Spacing[6] },
-  card: {
-    padding: Spacing[4],
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+  list: {
+    paddingBottom: Spacing[10],
+  },
+  row: {
+    paddingVertical: Spacing[4],
     gap: Spacing[3],
   },
+  rowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: DIVIDER_COLOR,
+  },
   head: {
-    flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing[3],
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#F3F4F6',
   },
   name: {
-    fontSize: 15,
-    lineHeight: 20,
-    color: Colors.light.text,
+    fontSize: 13,
+    lineHeight: 18,
+    color: TEXT_PRIMARY,
   },
   stars: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: Colors.light.coral,
+    gap: 2,
+    marginTop: 2,
   },
   body: {
-    fontSize: 14,
+    fontSize: 13,
     lineHeight: 20,
-    color: Colors.light.text,
+    color: TEXT_PRIMARY,
   },
+  secondary: { color: TEXT_SECONDARY },
 });
