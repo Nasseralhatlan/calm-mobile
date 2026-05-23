@@ -4,10 +4,10 @@ export const SERVICES: AddOnService[] = [
   {
     id: 's_catering_basic',
     kind: 'catering',
-    title: { ar: 'بوفيه عربي', en: 'Arabic buffet' },
+    title: { ar: 'بوفيه شعبي', en: 'Traditional buffet' },
     description: {
-      ar: 'كبسة، مندي، مشاوي، وسلطات. يكفي لجميع الضيوف.',
-      en: 'Kabsa, mandi, grills, and salads — for the whole guest list.',
+      ar: 'كبسة، مندي، مشاوي مع سلطات وأرز بخاري — كفاية لجميع الضيوف.',
+      en: 'Kabsa, mandi, grills with salads and bukhari rice — for the whole guest list.',
     },
     price: 12500,
     unit: 'per_guest',
@@ -16,10 +16,10 @@ export const SERVICES: AddOnService[] = [
   {
     id: 's_catering_premium',
     kind: 'catering',
-    title: { ar: 'بوفيه فاخر', en: 'Premium buffet' },
+    title: { ar: 'بوفيه فاخر مع شيف حي', en: 'Premium buffet with live chef' },
     description: {
-      ar: 'تشكيلة عربية ودولية فاخرة، محطات شيفات حية، وحلويات.',
-      en: 'Curated Arabic and international stations with live chefs and desserts.',
+      ar: 'محطات شيفات حية بطاجن، شواء، ومحطة حلويات مع الكنافة و القهوة العربية.',
+      en: 'Live chef stations with tagine, grills, and a dessert bar with kunafa and Arabic coffee.',
     },
     price: 22000,
     unit: 'per_guest',
@@ -30,8 +30,8 @@ export const SERVICES: AddOnService[] = [
     kind: 'decoration',
     title: { ar: 'تنسيق بالونات', en: 'Balloon arrangement' },
     description: {
-      ar: 'بوابة بالونات وزينة كاملة بالألوان التي تختارها.',
-      en: 'Balloon arch and full decor in colors of your choice.',
+      ar: 'بوابة بالونات وزينة كاملة بالألوان التي تختارها، مناسبة لأعياد الميلاد والملكة.',
+      en: 'Balloon arch and full decor in colors of your choice — perfect for birthdays and engagements.',
     },
     price: 80000,
     unit: 'flat',
@@ -42,8 +42,8 @@ export const SERVICES: AddOnService[] = [
     kind: 'decoration',
     title: { ar: 'تنسيق كامل للمناسبة', en: 'Full event styling' },
     description: {
-      ar: 'منسق محترف، إضاءة، ورود، ولوحة الترحيب.',
-      en: 'Professional stylist, lighting, florals, and welcome signage.',
+      ar: 'منسق محترف، إضاءة دافئة، ورود، لوحة ترحيب، ومسرح صغير لمناسبات الأعراس والعزائم الكبيرة.',
+      en: 'Professional stylist, warm lighting, florals, welcome signage, and a small stage for weddings or large feasts.',
     },
     price: 220000,
     unit: 'flat',
@@ -52,10 +52,10 @@ export const SERVICES: AddOnService[] = [
   {
     id: 's_staff_servers',
     kind: 'staff',
-    title: { ar: 'طاقم خدمة', en: 'Wait staff' },
+    title: { ar: 'طاقم خدمة و قهوجي', en: 'Wait staff & qahwaji' },
     description: {
-      ar: 'مضيفون ومضيفات لتقديم الطعام والمشروبات بأناقة.',
-      en: 'Servers to handle food and drinks with care.',
+      ar: 'مضيفون لتقديم الطعام والمشروبات، وقهوجي مختص بصب القهوة العربية والتمر للضيوف.',
+      en: 'Servers for food and drinks, plus a dedicated qahwaji to pour Arabic coffee and serve dates.',
     },
     price: 7500,
     unit: 'per_hour',
@@ -66,8 +66,8 @@ export const SERVICES: AddOnService[] = [
     kind: 'photography',
     title: { ar: 'مصور للمناسبة', en: 'Event photographer' },
     description: {
-      ar: 'مصور محترف يلتقط أهم لحظات مناسبتك.',
-      en: 'Professional photographer covering the key moments.',
+      ar: 'مصور محترف يلتقط أهم لحظات مناسبتك، مع تسليم الصور المعدلة خلال أسبوع.',
+      en: 'Professional photographer covering the key moments, with edited photos delivered within a week.',
     },
     price: 150000,
     unit: 'flat',
@@ -76,10 +76,10 @@ export const SERVICES: AddOnService[] = [
   {
     id: 's_entertainment_dj',
     kind: 'entertainment',
-    title: { ar: 'دي جي', en: 'DJ' },
+    title: { ar: 'منسق موسيقى', en: 'Music host' },
     description: {
-      ar: 'منسق صوتيات لإحياء المناسبة بقائمة موسيقى مخصصة لك.',
-      en: 'A DJ to set the mood with a custom playlist.',
+      ar: 'منسق صوتيات لإحياء المناسبة بقائمة موسيقى مخصصة، مع إمكانية الالتزام بالأهازيج الشعبية والأناشيد.',
+      en: 'A music host with a custom playlist, with the option to focus on Saudi folk songs and nasheed.',
     },
     price: 180000,
     unit: 'flat',

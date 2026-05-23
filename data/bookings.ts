@@ -25,7 +25,7 @@ export const BOOKINGS: Booking[] = [
   },
   {
     id: 'b_002',
-    listingId: 'l_camp_03',
+    listingId: 'l_chalet_05',
     guestId: currentUser.id,
     checkIn: '2026-07-15',
     checkOut: '2026-07-17',

@@ -14,9 +14,12 @@ export type AmenityId =
   | 'sound_system'
   | 'tv'
   | 'private_entrance'
-  | 'majlis'
+  | 'majlis_men'
+  | 'majlis_women'
   | 'kids_area'
-  | 'prayer_room';
+  | 'prayer_room'
+  | 'shisha_area'
+  | 'arabic_coffee';
 
 export interface Amenity {
   id: AmenityId;

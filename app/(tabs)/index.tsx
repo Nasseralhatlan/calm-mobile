@@ -49,7 +49,7 @@ export default function ExploreScreen() {
   const popular = useMemo(() => [...LISTINGS].sort((a, b) => b.rating.average - a.rating.average).slice(0, 6), []);
   const nearby = useMemo(() => LISTINGS.filter((l) => l.city.en === 'Riyadh').slice(0, 6), []);
   const recentlyViewed = useMemo(
-    () => ['l_chalet_02', 'l_rest_02', 'l_camp_03', 'l_farm_01', 'l_chalet_01']
+    () => ['l_chalet_02', 'l_rest_02', 'l_chalet_05', 'l_rest_04', 'l_chalet_01']
       .map((id) => LISTINGS.find((l) => l.id === id))
       .filter((l): l is (typeof LISTINGS)[number] => Boolean(l)),
     [],

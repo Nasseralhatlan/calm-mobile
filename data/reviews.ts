@@ -42,7 +42,7 @@ export const REVIEWS: Review[] = [
   },
   {
     id: 'r_004',
-    listingId: 'l_camp_03',
+    listingId: 'l_chalet_05',
     authorId: 'u_004',
     authorName: { ar: 'دانة', en: 'Dana' },
     authorAvatarUrl: 'https://i.pravatar.cc/150?img=20',

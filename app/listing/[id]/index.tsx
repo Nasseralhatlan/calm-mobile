@@ -465,8 +465,8 @@ export default function ListingDetailScreen() {
             <ThemedText
               style={[styles.body, { fontFamily: fontFamilyFor('regular', locale), textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>
               {t({
-                ar: 'استمتع بإقامة مريحة وعصرية في موقع مميز بالقرب من أهم الوجهات والخدمات. يوفر المكان غرفة نوم مريحة، وإنترنت سريع، ومطبخًا متكاملًا، ومنطقة جلوس هادئة تناسب الإقامات القصيرة والطويلة. مثالي للأفراد أو الأزواج أو رحلات العمل، مع سهولة الوصول إلى المطاعم والمقاهي والمعالم القريبة. تجربة دخول ذاتي سهلة وكل ما تحتاجه لإقامة ممتعة ومريحة.',
-                en: 'Enjoy a comfortable, modern stay in a prime location near top destinations and services. Comfortable bedroom, fast internet, full kitchen, and a quiet seating area — ideal for short or long stays. Easy self check-in and everything you need for a relaxing experience.',
+                ar: '• الدخول: من الساعة ٣ عصراً\n• المغادرة: قبل الساعة ١٢ ظهراً\n• مجلس الرجال ومجلس النساء بمداخل مستقلة\n• الالتزام بالاحتشام داخل المرافق المشتركة (المسبح والحديقة)\n• ممنوع التدخين داخل المجالس والغرف، ركن خارجي للشيشة\n• مراعاة وقت الصلاة وخفض الصوت أثناء الأذان\n• ممنوع رفع الموسيقى بعد منتصف الليل احتراماً للجيران\n• ممنوع الحيوانات الأليفة\n• الحفاظ على نظافة المكان قبل المغادرة، خدمة تنظيف نهائية متوفرة',
+                en: '• Check-in: from 3:00 PM\n• Check-out: before 12:00 PM\n• Separate entrances for men’s and women’s majlis\n• Modest dress in shared areas (pool and garden)\n• No smoking inside majlis or rooms — outdoor shisha area available\n• Please respect prayer times and lower the volume during adhan\n• No loud music after midnight, in respect to neighbours\n• No pets allowed\n• Leave the place tidy — final cleaning service available',
               })}
             </ThemedText>
           </View>

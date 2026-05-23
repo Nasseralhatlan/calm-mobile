@@ -6,7 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors, Radius, Spacing, fontFamilyFor } from '@/constants/theme';
 import { useLocale, useT } from '@/lib/i18n';
 
-export type Audience = 'family' | 'guys' | 'girls' | 'mixed';
+export type Audience = 'family' | 'guys' | 'girls' | 'families';
 export type Vibe = 'chill' | 'lively' | 'luxury';
 
 export interface HelpAnswers {
@@ -31,35 +31,35 @@ interface Option {
 
 const AUDIENCE_OPTIONS: Option[] = [
   { value: 'family', emoji: '👨‍👩‍👧', label: { ar: 'عائلة', en: 'Family' } },
+  { value: 'families', emoji: '🏡', label: { ar: 'عوائل', en: 'Multiple families' } },
   { value: 'guys', emoji: '🧑‍🤝‍🧑', label: { ar: 'شباب', en: 'Guys' } },
   { value: 'girls', emoji: '👯‍♀️', label: { ar: 'بنات', en: 'Girls' } },
-  { value: 'mixed', emoji: '👥', label: { ar: 'مختلط', en: 'Mixed' } },
 ];
 
 const ACTIVITY_BY_AUDIENCE: Record<Audience, Option[]> = {
   family: [
     { value: 'birthday', emoji: '🎂', label: { ar: 'عيد ميلاد', en: 'Birthday' } },
     { value: 'gathering', emoji: '🍽️', label: { ar: 'تجمع عائلي', en: 'Family gathering' } },
-    { value: 'vacation', emoji: '🌴', label: { ar: 'إجازة', en: 'Vacation' } },
+    { value: 'vacation', emoji: '🌴', label: { ar: 'إجازة', en: 'Getaway' } },
     { value: 'kids', emoji: '🧸', label: { ar: 'مناسبة أطفال', en: 'Kids event' } },
+  ],
+  families: [
+    { value: 'azimah', emoji: '🍛', label: { ar: 'عزيمة', en: 'Big feast' } },
+    { value: 'wedding', emoji: '💍', label: { ar: 'مناسبة عرس', en: 'Wedding event' } },
+    { value: 'eid', emoji: '🌙', label: { ar: 'مناسبة عيد', en: 'Eid gathering' } },
+    { value: 'milkah', emoji: '🤝', label: { ar: 'ملكة أو خطوبة', en: 'Engagement / Milkah' } },
   ],
   guys: [
     { value: 'hangout', emoji: '🎮', label: { ar: 'لمة', en: 'Hangout' } },
     { value: 'match', emoji: '⚽', label: { ar: 'مباراة', en: 'Match watch' } },
-    { value: 'camping', emoji: '🔥', label: { ar: 'تخييم', en: 'Camping' } },
+    { value: 'camping', emoji: '🔥', label: { ar: 'كشتة', en: 'Kashtah' } },
     { value: 'workshop', emoji: '🍖', label: { ar: 'شواء', en: 'BBQ night' } },
   ],
   girls: [
     { value: 'birthday', emoji: '🎉', label: { ar: 'عيد ميلاد', en: 'Birthday' } },
-    { value: 'session', emoji: '🍰', label: { ar: 'جلسة', en: 'Hangout' } },
+    { value: 'session', emoji: '🍰', label: { ar: 'جلسة بنات', en: 'Girls gathering' } },
     { value: 'photo', emoji: '📸', label: { ar: 'تصوير', en: 'Photoshoot' } },
-    { value: 'spa', emoji: '💆‍♀️', label: { ar: 'سبا و استرخاء', en: 'Spa & relax' } },
-  ],
-  mixed: [
-    { value: 'gathering', emoji: '🎊', label: { ar: 'تجمع', en: 'Gathering' } },
-    { value: 'wedding', emoji: '💍', label: { ar: 'مناسبة عرس', en: 'Wedding event' } },
-    { value: 'outing', emoji: '🌅', label: { ar: 'خروج', en: 'Day out' } },
-    { value: 'corporate', emoji: '💼', label: { ar: 'مناسبة عمل', en: 'Corporate event' } },
+    { value: 'graduation', emoji: '🎓', label: { ar: 'تخرج', en: 'Graduation' } },
   ],
 };
 
@@ -98,22 +98,10 @@ export function HelpContent({ answers, onChange, onSkip, onComplete }: HelpConte
     onComplete();
   };
 
+  const gridDir = isRTL ? 'row-reverse' : 'row';
+
   return (
     <View style={styles.wrap}>
-      {/* Skip button at top */}
-      <View style={styles.skipRow}>
-        <PressableScale
-          haptic="select"
-          scaleTo={0.97}
-          onPress={onSkip}
-          style={styles.skipPill}>
-          <ThemedText
-            style={[styles.skipText, { fontFamily: fontFamilyFor('bold', locale) }]}>
-            {t({ ar: 'ورني كل شئ', en: 'Show me everything' })}
-          </ThemedText>
-        </PressableScale>
-      </View>
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}>
@@ -123,7 +111,7 @@ export function HelpContent({ answers, onChange, onSkip, onComplete }: HelpConte
           active
           title={t({ ar: 'مين معك؟', en: "Who's coming?" })}
           isRTL={isRTL}>
-          <View style={styles.optionsGrid}>
+          <View style={[styles.optionsGrid, { flexDirection: gridDir }]}>
             {AUDIENCE_OPTIONS.map((o) => (
               <Pill
                 key={o.value}
@@ -143,7 +131,7 @@ export function HelpContent({ answers, onChange, onSkip, onComplete }: HelpConte
             active
             title={t({ ar: 'وش تبغى تسوي؟', en: 'What for?' })}
             isRTL={isRTL}>
-            <View style={styles.optionsGrid}>
+            <View style={[styles.optionsGrid, { flexDirection: gridDir }]}>
               {activityOptions.map((o) => (
                 <Pill
                   key={o.value}
@@ -164,7 +152,7 @@ export function HelpContent({ answers, onChange, onSkip, onComplete }: HelpConte
             active
             title={t({ ar: 'وش الجو المفضل؟', en: 'What vibe do you want?' })}
             isRTL={isRTL}>
-            <View style={styles.optionsGrid}>
+            <View style={[styles.optionsGrid, { flexDirection: gridDir }]}>
               {VIBE_OPTIONS.map((o) => (
                 <Pill
                   key={o.value}
@@ -178,6 +166,17 @@ export function HelpContent({ answers, onChange, onSkip, onComplete }: HelpConte
           </Question>
         ) : null}
 
+        {/* Skip button — bottom, black */}
+        <PressableScale
+          haptic="select"
+          scaleTo={0.97}
+          onPress={onSkip}
+          style={styles.skipPill}>
+          <ThemedText
+            style={[styles.skipText, { fontFamily: fontFamilyFor('bold', locale) }]}>
+            {t({ ar: 'ورني كل شئ', en: 'Show me everything' })}
+          </ThemedText>
+        </PressableScale>
       </ScrollView>
     </View>
   );
@@ -256,15 +255,12 @@ function Pill({
 const styles = StyleSheet.create({
   wrap: { flex: 1 },
 
-  skipRow: {
-    alignItems: 'stretch',
-    paddingBottom: Spacing[4],
-  },
   skipPill: {
-    backgroundColor: '#F4F4F4',
+    marginTop: Spacing[3],
+    backgroundColor: '#000000',
     paddingHorizontal: Spacing[5],
-    paddingVertical: Spacing[3] + 2,
-    borderRadius: Radius.md,
+    paddingVertical: Spacing[4],
+    borderRadius: Radius.lg,
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
@@ -272,7 +268,7 @@ const styles = StyleSheet.create({
   skipText: {
     fontSize: 15,
     lineHeight: 20,
-    color: Colors.light.text,
+    color: '#FFFFFF',
   },
 
   scroll: {

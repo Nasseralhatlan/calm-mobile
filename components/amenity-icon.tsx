@@ -1,22 +1,8 @@
 import { StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { amenityEmoji } from '@/data/amenities';
 import type { AmenityId } from '@/data/types';
-
-const EMOJI: Record<AmenityId, string> = {
-  wifi: '🛜',
-  pool: '🏊',
-  kitchen: '🍳',
-  parking: '🅿️',
-  ac: '❄️',
-  bbq: '🍖',
-  sound_system: '🔊',
-  tv: '📺',
-  private_entrance: '🚪',
-  majlis: '🛋️',
-  kids_area: '🧸',
-  prayer_room: '🕌',
-};
 
 interface AmenityIconProps {
   id: AmenityId;
@@ -30,7 +16,7 @@ export function AmenityIcon({ id, size = 22 }: AmenityIconProps) {
         styles.emoji,
         { fontSize: size, lineHeight: size * 1.4, width: size * 1.5 },
       ]}>
-      {EMOJI[id]}
+      {amenityEmoji(id)}
     </ThemedText>
   );
 }

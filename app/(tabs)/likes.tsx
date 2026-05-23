@@ -16,7 +16,7 @@ const TEXT_PRIMARY = '#000000';
 const TEXT_SECONDARY = '#6B7280';
 
 // Placeholder until real "viewed" tracking is wired up.
-const RECENT_IDS = ['l_chalet_02', 'l_rest_02', 'l_camp_03', 'l_farm_01', 'l_chalet_01'];
+const RECENT_IDS = ['l_chalet_02', 'l_rest_02', 'l_chalet_05', 'l_rest_04', 'l_chalet_01'];
 
 export default function LikesScreen() {
   const t = useT();

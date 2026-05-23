@@ -27,7 +27,7 @@ interface LikesContextValue {
 const LikesContext = createContext<LikesContextValue | null>(null);
 
 export function LikesProvider({ children }: { children: ReactNode }) {
-  const [likes, dispatch] = useReducer(reducer, new Set<string>(['l_chalet_01', 'l_camp_03']));
+  const [likes, dispatch] = useReducer(reducer, new Set<string>(['l_chalet_01', 'l_rest_02']));
 
   const toggle = useCallback((id: string) => dispatch({ type: 'toggle', id }), []);
   const has = useCallback((id: string) => likes.has(id), [likes]);
