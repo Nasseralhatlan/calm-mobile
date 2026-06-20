@@ -56,7 +56,7 @@ export default function QuickFiltersModal() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: Colors.light.background },
   safe: { flex: 1 },
   header: {
     paddingHorizontal: Spacing[5],

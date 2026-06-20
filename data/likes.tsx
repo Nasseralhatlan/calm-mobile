@@ -1,38 +1,67 @@
+import { useRouter } from 'expo-router';
 import {
   createContext,
   useCallback,
   useContext,
   useMemo,
-  useReducer,
+  useState,
   type ReactNode,
 } from 'react';
 
-type Action = { type: 'toggle'; id: string };
-
-function reducer(state: Set<string>, action: Action): Set<string> {
-  const next = new Set(state);
-  if (action.type === 'toggle') {
-    if (next.has(action.id)) next.delete(action.id);
-    else next.add(action.id);
-  }
-  return next;
-}
+import { useAuthState } from '@/data/auth-state';
+import { markFavoritesStale } from '@/data/favorites-cache';
+import { likePlace, unlikePlace } from '@/lib/api';
 
 interface LikesContextValue {
-  likes: Set<string>;
-  toggle: (id: string) => void;
-  has: (id: string) => boolean;
+  /**
+   * The displayed liked state for a place. `fallback` is the value carried on
+   * the card itself (`ApiPlace.is_liked` / `Listing.isLiked`); a local
+   * optimistic override takes precedence once the user taps.
+   */
+  isLiked: (id: string, fallback?: boolean) => boolean;
+  /** Optimistically flip + persist via the API; revert on failure. */
+  toggle: (id: string, currentLiked: boolean) => void;
 }
 
 const LikesContext = createContext<LikesContextValue | null>(null);
 
 export function LikesProvider({ children }: { children: ReactNode }) {
-  const [likes, dispatch] = useReducer(reducer, new Set<string>(['l_chalet_01', 'l_rest_02']));
+  const router = useRouter();
+  const { isAuthed } = useAuthState();
+  // id → liked override layered on top of each card's own is_liked.
+  const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map());
 
-  const toggle = useCallback((id: string) => dispatch({ type: 'toggle', id }), []);
-  const has = useCallback((id: string) => likes.has(id), [likes]);
+  const set = useCallback((id: string, liked: boolean) => {
+    setOverrides((prev) => {
+      const next = new Map(prev);
+      next.set(id, liked);
+      return next;
+    });
+  }, []);
 
-  const value = useMemo(() => ({ likes, toggle, has }), [likes, toggle, has]);
+  const isLiked = useCallback(
+    (id: string, fallback = false) => (overrides.has(id) ? overrides.get(id)! : fallback),
+    [overrides],
+  );
+
+  const toggle = useCallback(
+    (id: string, currentLiked: boolean) => {
+      // Liking requires an account — send guests to the login modal instead.
+      if (!isAuthed) {
+        router.push('/login');
+        return;
+      }
+      const next = !currentLiked;
+      set(id, next); // optimistic
+      // The favorites list changed — force a refetch next time it's opened.
+      markFavoritesStale();
+      const call = next ? likePlace(id, {}) : unlikePlace(id, {});
+      call.catch(() => set(id, currentLiked)); // revert on failure
+    },
+    [isAuthed, router, set],
+  );
+
+  const value = useMemo(() => ({ isLiked, toggle }), [isLiked, toggle]);
 
   return <LikesContext.Provider value={value}>{children}</LikesContext.Provider>;
 }

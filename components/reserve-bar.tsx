@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PressableScale } from '@/components/pressable-scale';
+import { Spinner } from '@/components/spinner';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
 import { formatPriceSR } from '@/lib/format';
@@ -11,9 +12,10 @@ import { useLocale, useT } from '@/lib/i18n';
 interface ReserveBarProps {
   halalas: number;
   onReserve: () => void;
+  loading?: boolean;
 }
 
-export function ReserveBar({ halalas, onReserve }: ReserveBarProps) {
+export function ReserveBar({ halalas, onReserve, loading }: ReserveBarProps) {
   const insets = useSafeAreaInsets();
   const { locale } = useLocale();
   const t = useT();
@@ -30,14 +32,23 @@ export function ReserveBar({ halalas, onReserve }: ReserveBarProps) {
           </ThemedText>
           <ThemedText
             style={[styles.unit, { fontFamily: fontFamilyFor('regular', locale) }]}>
-            {t({ ar: 'لليلة', en: 'per night' })}
+            {t({ ar: 'لليوم', en: 'per day' })}
           </ThemedText>
         </View>
-        <PressableScale onPress={onReserve} scaleTo={0.96} haptic="forward" style={styles.cta}>
-          <ThemedText
-            style={[styles.ctaText, { fontFamily: fontFamilyFor('medium', locale) }]}>
-            {t({ ar: 'احجز الآن', en: 'Reserve' })}
-          </ThemedText>
+        <PressableScale
+          onPress={onReserve}
+          disabled={loading}
+          scaleTo={0.96}
+          haptic="forward"
+          style={styles.cta}>
+          {loading ? (
+            <Spinner size={20} />
+          ) : (
+            <ThemedText
+              style={[styles.ctaText, { fontFamily: fontFamilyFor('medium', locale) }]}>
+              {t({ ar: 'احجز الآن', en: 'Reserve' })}
+            </ThemedText>
+          )}
         </PressableScale>
       </View>
     </View>

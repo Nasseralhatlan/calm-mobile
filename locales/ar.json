@@ -1,4 +1,5 @@
 {
   "CFBundleDisplayName": "كالم",
-  "CFBundleName": "كالم"
+  "CFBundleName": "كالم",
+  "NSPhotoLibraryUsageDescription": "يستخدم كالم صورك لتعيين صورة ملفك الشخصي."
 }

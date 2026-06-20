@@ -9,10 +9,13 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Radius, Spacing } from '@/constants/theme';
+import { useLocale } from '@/lib/i18n';
 
 const PULSE_COLOR = '#E5E7EB';
 
 export function SkeletonCard() {
+  const { locale } = useLocale();
+  const isRTL = locale === 'ar';
   const opacity = useSharedValue(0.55);
 
   useEffect(() => {
@@ -28,7 +31,7 @@ export function SkeletonCard() {
   return (
     <View style={styles.card}>
       <Animated.View style={[styles.image, animStyle]} />
-      <View style={styles.meta}>
+      <View style={[styles.meta, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
         <Animated.View style={[styles.line, styles.lineLarge, animStyle]} />
         <Animated.View style={[styles.line, styles.lineMed, animStyle]} />
         <Animated.View style={[styles.line, styles.lineSmall, animStyle]} />

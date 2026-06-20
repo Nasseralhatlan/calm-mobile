@@ -16,7 +16,7 @@ import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors, Radius, Spacing, Springs, fontFamilyFor } from '@/constants/theme';
-import { getListing } from '@/data/listings';
+import { useListingForId } from '@/hooks/use-listing-for-id';
 import { useLocale, useT } from '@/lib/i18n';
 
 const TEXT_PRIMARY = '#000000';
@@ -34,7 +34,7 @@ export default function ConfirmationScreen() {
   const t = useT();
   const { locale } = useLocale();
   const isRTL = locale === 'ar';
-  const listing = getListing(id);
+  const { listing } = useListingForId(id);
 
   const ringScale = useSharedValue(0.4);
   const ringOpacity = useSharedValue(0);
@@ -215,7 +215,7 @@ const RING_SIZE = 132;
 const RING_INNER = 100;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: Colors.light.background },
   content: {
     flex: 1,
     alignItems: 'center',

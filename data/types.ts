@@ -26,21 +26,14 @@ export interface Amenity {
   label: Localized<string>;
 }
 
-export interface Coordinates {
-  lat: number;
-  lng: number;
-}
-
+// The backend only exposes max guests today (no bed/bath counts).
 export interface Capacity {
   guests: number;
-  bedrooms: number;
-  bathrooms: number;
 }
 
+// The backend returns a single nightly price (SAR) — no separate fees.
 export interface Pricing {
   nightly: number;
-  cleaningFee: number;
-  serviceFee: number;
 }
 
 export interface Rating {
@@ -63,16 +56,25 @@ export interface Listing {
   type: ListingType;
   title: Localized<string>;
   description: Localized<string>;
+  /** House rules from the backend; undefined when the place has none. */
+  rules?: Localized<string>;
   city: Localized<string>;
   region: Localized<string>;
-  coordinates: Coordinates;
   capacity: Capacity;
   amenities: AmenityId[];
   photos: string[];
   pricing: Pricing;
-  hostId: string;
+  /** Host id — only present on the place-detail payload, not list payloads. */
+  hostId?: string;
   rating: Rating;
   createdAt: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  /** When true, checkout is the day after the booking's last day. */
+  checkoutNextDay?: boolean;
+  /** Whether the authed viewer has liked this place (from the API). */
+  isLiked?: boolean;
+  likesCount?: number;
 }
 
 export type ServiceKind = 'catering' | 'decoration' | 'staff' | 'photography' | 'entertainment';
@@ -114,17 +116,6 @@ export interface Booking {
   services: BookedService[];
   pricing: BookingPriceBreakdown;
   status: BookingStatus;
-  createdAt: string;
-}
-
-export interface Review {
-  id: string;
-  listingId: string;
-  authorId: string;
-  authorName: Localized<string>;
-  authorAvatarUrl: string;
-  rating: number;
-  text: Localized<string>;
   createdAt: string;
 }
 

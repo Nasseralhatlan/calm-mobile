@@ -23,8 +23,8 @@ export function ListingCardCompact({ listing }: ListingCardCompactProps) {
   const t = useT();
   const { locale } = useLocale();
   const isRTL = locale === 'ar';
-  const { has, toggle } = useLikes();
-  const liked = has(listing.id);
+  const { isLiked, toggle } = useLikes();
+  const liked = isLiked(listing.id, listing.isLiked);
   const isSuperhost = listing.rating.average >= 4.9;
 
   const numFmt = useMemo(
@@ -32,7 +32,10 @@ export function ListingCardCompact({ listing }: ListingCardCompactProps) {
     [locale],
   );
 
-  const specs = `${numFmt.format(listing.capacity.guests)} ${t({ ar: 'اشخاص', en: 'guests' })} . ${numFmt.format(listing.capacity.bedrooms)} ${t({ ar: 'غرف نوم', en: 'bedrooms' })}`;
+  const specs =
+    listing.capacity.guests > 0
+      ? `${numFmt.format(listing.capacity.guests)} ${t({ ar: 'اشخاص', en: 'guests' })}`
+      : '';
   const price = formatPriceSR(listing.pricing.nightly);
 
   const textBase = {
@@ -54,7 +57,7 @@ export function ListingCardCompact({ listing }: ListingCardCompactProps) {
             transition={200}
           />
           <View style={styles.heart}>
-            <LikeButton liked={liked} onPress={() => toggle(listing.id)} size={30} />
+            <LikeButton liked={liked} onPress={() => toggle(listing.id, liked)} size={30} />
           </View>
           {isSuperhost ? (
             <View style={styles.badge}>
@@ -69,11 +72,13 @@ export function ListingCardCompact({ listing }: ListingCardCompactProps) {
             style={[textBase, { fontFamily: fontFamilyFor('medium', locale) }]}>
             {t(listing.title)}
           </ThemedText>
-          <ThemedText
-            numberOfLines={1}
-            style={[textBase, { fontFamily: fontFamilyFor('light', locale) }]}>
-            {specs}
-          </ThemedText>
+          {specs ? (
+            <ThemedText
+              numberOfLines={1}
+              style={[textBase, { fontFamily: fontFamilyFor('light', locale) }]}>
+              {specs}
+            </ThemedText>
+          ) : null}
           <ThemedText
             numberOfLines={1}
             style={[textBase, { fontFamily: fontFamilyFor('medium', locale) }]}>

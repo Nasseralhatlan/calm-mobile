@@ -1,18 +1,33 @@
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Rect } from 'react-native-svg';
 
 interface CalendarIconProps {
   size?: number;
   color?: string;
 }
 
-export function CalendarIcon({ size = 26, color = '#C6C6C6' }: CalendarIconProps) {
+export function CalendarIcon({ size = 22, color = '#C6C6C6' }: CalendarIconProps) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Svg width={size} height={size} viewBox="0 0 22 22" fill="none">
+      <Rect
+        x={0.75}
+        y={2.75}
+        width={20}
+        height={18}
+        rx={4}
+        stroke={color}
+        strokeWidth={1.5}
+      />
       <Path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M8.9375 4.06248V2.70831H10.5625V4.06248H15.4375V2.70831H17.0625V4.06248H20.5833C21.6304 4.06248 22.4792 4.91127 22.4792 5.95831V15.1666C22.4792 15.3821 22.3936 15.5888 22.2412 15.7412L15.7412 22.2412C15.5888 22.3935 15.3822 22.4791 15.1667 22.4791H7.58333C5.33967 22.4791 3.52083 20.6603 3.52083 18.4166V5.95831C3.52083 4.91127 4.36962 4.06248 5.41666 4.06248H8.9375ZM8.9375 5.68748H5.41666C5.26708 5.68748 5.14583 5.80874 5.14583 5.95831V8.93748H20.8542V5.95831C20.8542 5.80874 20.7329 5.68748 20.5833 5.68748H17.0625V7.04165H15.4375V5.68748H10.5625V7.04165H8.9375V5.68748ZM20.8542 10.5625H5.14583V18.4166C5.14583 19.7628 6.23713 20.8541 7.58333 20.8541H13.8125V17.875C13.8125 15.6313 15.6313 13.8125 17.875 13.8125H20.8542V10.5625ZM20.2468 15.4375H17.875C16.5288 15.4375 15.4375 16.5288 15.4375 17.875V20.2468L20.2468 15.4375Z"
-        fill={color}
+        d="M6.75 0.75C4.08333 0.75 4.08333 4.75 6.75 4.75"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M15.75 0.75C13.0833 0.75 13.0833 4.75 15.75 4.75"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
       />
     </Svg>
   );

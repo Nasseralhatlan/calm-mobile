@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import { ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import Animated, {
@@ -33,20 +33,22 @@ interface ListingCardProps {
   endDate?: string;
 }
 
-export function ListingCard({ listing, startDate, endDate }: ListingCardProps) {
+function ListingCardBase({ listing, startDate, endDate }: ListingCardProps) {
   const t = useT();
   const { locale } = useLocale();
   const isRTL = locale === 'ar';
-  const { has, toggle } = useLikes();
-  const liked = has(listing.id);
+  const { isLiked, toggle } = useLikes();
+  const liked = isLiked(listing.id, listing.isLiked);
   const isSuperhost = listing.rating.average >= 4.9;
 
-  const numFmt = useMemo(
-    () => new Intl.NumberFormat(locale === 'ar' ? 'ar-SA' : 'en-US'),
-    [locale],
-  );
-
-  const specs = `${numFmt.format(listing.capacity.guests)} ${t({ ar: 'اشخاص', en: 'guests' })} . ${numFmt.format(listing.capacity.bedrooms)} ${t({ ar: 'غرف نوم', en: 'bedrooms' })}`;
+  // Area first, then the guest count — the number is always Latin digits, the
+  // word stays localized ("3 guests" / "3 ضيوف").
+  const areaLabel = t(listing.region).trim();
+  const guestsLabel =
+    listing.capacity.guests > 0
+      ? `${listing.capacity.guests} ${t({ ar: 'ضيوف', en: 'guests' })}`
+      : '';
+  const specs = [areaLabel, guestsLabel].filter(Boolean).join(' · ');
   const price = formatPriceSR(listing.pricing.nightly);
 
   const textBase = {
@@ -74,7 +76,7 @@ export function ListingCard({ listing, startDate, endDate }: ListingCardProps) {
         <PhotoCarousel
           photos={listing.photos}
           liked={liked}
-          onToggleLike={() => toggle(listing.id)}
+          onToggleLike={() => toggle(listing.id, liked)}
           isSuperhost={isSuperhost}
         />
 
@@ -106,11 +108,13 @@ export function ListingCard({ listing, startDate, endDate }: ListingCardProps) {
             {t(listing.description)}
           </ThemedText>
 
-          <ThemedText
-            numberOfLines={1}
-            style={[styles.specs, textBase, { fontFamily: fontFamilyFor('light', locale) }]}>
-            {specs}
-          </ThemedText>
+          {specs ? (
+            <ThemedText
+              numberOfLines={1}
+              style={[styles.specs, textBase, { fontFamily: fontFamilyFor('light', locale) }]}>
+              {specs}
+            </ThemedText>
+          ) : null}
 
           <ThemedText
             numberOfLines={1}
@@ -122,6 +126,9 @@ export function ListingCard({ listing, startDate, endDate }: ListingCardProps) {
     </Link>
   );
 }
+
+// Memoized so recycled FlashList rows don't re-render unless their listing changes.
+export const ListingCard = memo(ListingCardBase);
 
 function PhotoCarousel({
   photos,
@@ -135,10 +142,25 @@ function PhotoCarousel({
   isSuperhost: boolean;
 }) {
   const [width, setWidth] = useState(DEFAULT_CARD_WIDTH);
+  // Only mount the visible photo + its neighbours; the rest stay lightweight
+  // placeholders until swiped into view (cuts simultaneous image decodes in
+  // long lists). ±1 keeps the next swipe instant.
+  const [activeIndex, setActiveIndex] = useState(0);
   const scrollX = useSharedValue(0);
+  const scrollRef = useRef<GHScrollView>(null);
   const pageIndex = useDerivedValue(() =>
     width > 0 ? Math.round(scrollX.value / width) : 0,
   );
+
+  // FlashList recycles this cell for different listings — when the photos change
+  // (a recycle), snap back to the first photo so the dots and the lazy-load
+  // window don't inherit the previous card's scroll position.
+  useEffect(() => {
+    setActiveIndex(0);
+    scrollX.value = 0;
+    scrollRef.current?.scrollTo({ x: 0, animated: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photos]);
 
   const onScroll = useAnimatedScrollHandler({
     onScroll: (e) => {
@@ -154,22 +176,32 @@ function PhotoCarousel({
         if (w > 0 && w !== width) setWidth(w);
       }}>
       <AnimatedGHScrollView
+        ref={scrollRef}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
+        onMomentumScrollEnd={(e) => {
+          const i = width > 0 ? Math.round(e.nativeEvent.contentOffset.x / width) : 0;
+          if (i !== activeIndex) setActiveIndex(i);
+        }}
         bounces
         alwaysBounceHorizontal>
-        {photos.map((url) => (
-          <Image
-            key={url}
-            source={{ uri: url }}
-            style={[styles.image, { width }]}
-            contentFit="cover"
-            transition={200}
-          />
-        ))}
+        {photos.map((url, i) =>
+          Math.abs(i - activeIndex) <= 1 ? (
+            <Image
+              key={url}
+              source={{ uri: url }}
+              recyclingKey={url}
+              style={[styles.image, { width }]}
+              contentFit="cover"
+              transition={200}
+            />
+          ) : (
+            <View key={url} style={[styles.image, styles.imagePlaceholder, { width }]} />
+          ),
+        )}
       </AnimatedGHScrollView>
 
       <View style={styles.heart}>
@@ -217,6 +249,9 @@ const styles = StyleSheet.create({
   },
   image: {
     height: '100%',
+  },
+  imagePlaceholder: {
+    backgroundColor: '#F3F4F6',
   },
   heart: {
     position: 'absolute',

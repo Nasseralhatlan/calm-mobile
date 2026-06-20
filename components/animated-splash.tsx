@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { Image, StyleSheet } from 'react-native';
@@ -9,27 +8,29 @@ import Animated, {
   useSharedValue,
   withDelay,
   withSequence,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
+
+import { Colors } from '@/constants/theme';
 
 interface AnimatedSplashProps {
   appReady: boolean;
   onAnimationFinished: () => void;
 }
 
-const LOGO = require('@/assets/logo/logo.png');
+const LOGO = require('@/assets/logo/logo-white.png');
 
-const FADE_IN_MS = 320;
-const UNBLUR_MS = 720;
+const FADE_IN_MS = 220;
+const HOLD_MS = 120;
 const BOUNCE_MS = 180;
-const EXIT_MS = 240;
+const LOGO_OUT_MS = 240;
+const BG_OUT_MS = 320;
 
 export function AnimatedSplash({ appReady, onAnimationFinished }: AnimatedSplashProps) {
   const [layoutReady, setLayoutReady] = useState(false);
   const opacity = useSharedValue(0);
-  const scale = useSharedValue(0.94);
-  const blurOpacity = useSharedValue(1);
+  const scale = useSharedValue(1);
+  const whiteOverlay = useSharedValue(0);
 
   useEffect(() => {
     if (layoutReady) {
@@ -40,49 +41,56 @@ export function AnimatedSplash({ appReady, onAnimationFinished }: AnimatedSplash
   useEffect(() => {
     if (!layoutReady) return;
     opacity.value = withTiming(1, { duration: FADE_IN_MS, easing: Easing.out(Easing.cubic) });
-    scale.value = withSpring(1, { damping: 16, stiffness: 220, mass: 0.8 });
-    blurOpacity.value = withTiming(0, { duration: UNBLUR_MS, easing: Easing.out(Easing.cubic) });
-  }, [layoutReady, opacity, scale, blurOpacity]);
+  }, [layoutReady, opacity]);
 
   useEffect(() => {
     if (!appReady || !layoutReady) return;
 
-    scale.value = withSequence(
-      withTiming(1.12, { duration: BOUNCE_MS, easing: Easing.out(Easing.cubic) }),
-      withTiming(0.6, { duration: EXIT_MS, easing: Easing.in(Easing.cubic) }),
+    scale.value = withDelay(
+      HOLD_MS,
+      withSequence(
+        withTiming(1.12, { duration: BOUNCE_MS, easing: Easing.out(Easing.cubic) }),
+        withTiming(0.6, { duration: LOGO_OUT_MS, easing: Easing.in(Easing.cubic) }),
+      ),
     );
 
     opacity.value = withDelay(
-      BOUNCE_MS,
+      HOLD_MS + BOUNCE_MS,
+      withTiming(0, { duration: LOGO_OUT_MS, easing: Easing.in(Easing.cubic) }),
+    );
+
+    whiteOverlay.value = withDelay(
+      HOLD_MS + BOUNCE_MS + LOGO_OUT_MS,
       withTiming(
-        0,
-        { duration: EXIT_MS, easing: Easing.in(Easing.cubic) },
+        1,
+        { duration: BG_OUT_MS, easing: Easing.out(Easing.cubic) },
         (finished) => {
           if (finished) runOnJS(onAnimationFinished)();
         },
       ),
     );
-  }, [appReady, layoutReady, opacity, scale, onAnimationFinished]);
+  }, [appReady, layoutReady, opacity, scale, whiteOverlay, onAnimationFinished]);
 
-  const containerStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const logoStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
     transform: [{ scale: scale.value }],
   }));
-  const blurStyle = useAnimatedStyle(() => ({
-    opacity: blurOpacity.value,
+  const whiteStyle = useAnimatedStyle(() => ({
+    opacity: whiteOverlay.value,
   }));
 
   return (
     <Animated.View
       pointerEvents="none"
       onLayout={() => setLayoutReady(true)}
-      style={[styles.container, containerStyle]}>
+      style={styles.container}>
       <Animated.View style={[styles.logoBox, logoStyle]}>
         <Image source={LOGO} style={styles.logo} resizeMode="contain" />
-        <Animated.View style={[StyleSheet.absoluteFillObject, blurStyle]} pointerEvents="none">
-          <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFillObject} />
-        </Animated.View>
       </Animated.View>
+      <Animated.View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFillObject, styles.whiteOverlay, whiteStyle]}
+      />
     </Animated.View>
   );
 }
@@ -90,7 +98,7 @@ export function AnimatedSplash({ appReady, onAnimationFinished }: AnimatedSplash
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.light.coral,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -101,5 +109,8 @@ const styles = StyleSheet.create({
   logo: {
     width: 180,
     height: 72,
+  },
+  whiteOverlay: {
+    backgroundColor: '#FFFFFF',
   },
 });

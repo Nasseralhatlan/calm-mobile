@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
+import { dateKey, rangeHasBlockedDay, riyadhToday } from '@/lib/date-key';
 import { useLocale } from '@/lib/i18n';
 
 export interface DateRange {
@@ -16,6 +17,8 @@ interface WhenContentProps {
   range: DateRange;
   onChange: (range: DateRange) => void;
   onConfirm?: () => void;
+  /** `YYYY-MM-DD` keys of blocked days — rendered disabled / struck through. */
+  unavailableDates?: Set<string> | null;
 }
 
 const MONTHS_TO_SHOW = 6;
@@ -24,13 +27,16 @@ function sameDay(a: Date, b: Date) {
   return a.toDateString() === b.toDateString();
 }
 
-export function WhenContent({ range, onChange, onConfirm }: WhenContentProps) {
+export function WhenContent({
+  range,
+  onChange,
+  onConfirm,
+  unavailableDates,
+}: WhenContentProps) {
   const { locale } = useLocale();
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
+  // Anchor the calendar to the venue timezone so the "past day" gate matches
+  // the server's day boundaries (CLAUDE.md mandates Asia/Riyadh).
+  const today = useMemo(() => riyadhToday(), []);
 
   const months = useMemo(() => {
     const arr: Date[] = [];
@@ -61,15 +67,27 @@ export function WhenContent({ range, onChange, onConfirm }: WhenContentProps) {
     });
   }, [today, locale]);
 
+  const blocked = unavailableDates ?? null;
+
+  const isBlockedDay = (d: Date) => !!blocked && blocked.has(dateKey(d));
+
   const handlePick = (d: Date) => {
+    if (isBlockedDay(d)) return;
     Haptics.selectionAsync().catch(() => {});
     const { start, end } = range;
     let next: DateRange;
     if (!start || (start && end)) {
+      // Begin a new selection: pick a start, no end yet. A start with no end
+      // counts as a single day (start = end) for the booking.
       next = { start: d, end: null };
     } else if (d.getTime() <= start.getTime()) {
+      // Tapping the start again (or an earlier day) restarts from that day.
+      next = { start: d, end: null };
+    } else if (rangeHasBlockedDay(start, d, blocked)) {
+      // Can't book across a blocked day — restart from this day.
       next = { start: d, end: null };
     } else {
+      // Extend the inclusive range (Sat then Sun = both days occupied).
       next = { start, end: d };
     }
     onChange(next);
@@ -79,11 +97,11 @@ export function WhenContent({ range, onChange, onConfirm }: WhenContentProps) {
   };
 
   const handleChip = (d: Date) => {
+    // A quick-chip stay is a single day [d, d]. Reject if that day is blocked
+    // — the chip is also rendered disabled in that case.
+    if (rangeHasBlockedDay(d, d, blocked)) return;
     Haptics.selectionAsync().catch(() => {});
-    const start = d;
-    const end = new Date(d);
-    end.setDate(end.getDate() + 1);
-    onChange({ start, end });
+    onChange({ start: d, end: d });
     onConfirm?.();
   };
 
@@ -114,6 +132,7 @@ export function WhenContent({ range, onChange, onConfirm }: WhenContentProps) {
             range={range}
             onSelect={handlePick}
             locale={locale}
+            blocked={blocked}
           />
         ))}
       </ScrollView>
@@ -122,16 +141,27 @@ export function WhenContent({ range, onChange, onConfirm }: WhenContentProps) {
         {quickChips.map((c) => {
           const isActive =
             !!range.start && sameDay(c.value, range.start) && range.end !== null;
+          // A quick chip books a single day (c.value). Disable it if that day
+          // is unavailable — same check handleChip uses to reject.
+          const chipBlocked = rangeHasBlockedDay(c.value, c.value, blocked);
           return (
             <PressableScale
               key={c.day}
               scaleTo={0.95}
+              disabled={chipBlocked}
               onPress={() => handleChip(c.value)}
-              style={isActive ? [styles.chip, styles.chipActive] : styles.chip}>
+              style={
+                chipBlocked
+                  ? [styles.chip, styles.chipDisabled]
+                  : isActive
+                    ? [styles.chip, styles.chipActive]
+                    : styles.chip
+              }>
               <ThemedText
                 numberOfLines={1}
                 style={[
                   styles.chipDay,
+                  chipBlocked && styles.chipTextDisabled,
                   { fontFamily: fontFamilyFor('bold', locale) },
                 ]}>
                 {c.day}
@@ -139,6 +169,7 @@ export function WhenContent({ range, onChange, onConfirm }: WhenContentProps) {
               <ThemedText
                 style={[
                   styles.chipDate,
+                  chipBlocked && styles.chipTextDisabled,
                   { fontFamily: fontFamilyFor('regular', locale) },
                 ]}>
                 {c.date}
@@ -157,12 +188,14 @@ function MonthGrid({
   range,
   onSelect,
   locale,
+  blocked,
 }: {
   month: Date;
   today: Date;
   range: DateRange;
   onSelect: (d: Date) => void;
   locale: 'ar' | 'en';
+  blocked: Set<string> | null;
 }) {
   const monthLabel = month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
@@ -185,6 +218,8 @@ function MonthGrid({
         {cells.map((c, i) => {
           if (!c) return <View key={i} style={monthStyles.cell} />;
           const past = c.date < today;
+          const isBlocked = !!blocked && blocked.has(dateKey(c.date));
+          const disabled = past || isBlocked;
           const t = c.date.getTime();
           const isStart = !!start && sameDay(c.date, start);
           const isEnd = !!end && sameDay(c.date, end);
@@ -200,9 +235,9 @@ function MonthGrid({
           return (
             <Pressable
               key={i}
-              onPress={() => !past && onSelect(c.date)}
+              onPress={() => !disabled && onSelect(c.date)}
               style={monthStyles.cell}
-              disabled={past}>
+              disabled={disabled}>
               {showRangeBg ? (
                 <View
                   style={[
@@ -222,6 +257,7 @@ function MonthGrid({
                   style={[
                     monthStyles.dayText,
                     past && monthStyles.dayPast,
+                    isBlocked && !past && monthStyles.dayBlocked,
                     isEndpoint && monthStyles.daySelected,
                     { fontFamily: fontFamilyFor('bold', locale) },
                   ]}>
@@ -264,6 +300,15 @@ const styles = StyleSheet.create({
   },
   chipActive: {
     backgroundColor: 'rgba(0,0,0,0.04)',
+  },
+  chipDisabled: {
+    borderColor: '#E5E5E5',
+    backgroundColor: '#FAFAFA',
+    opacity: 0.6,
+  },
+  chipTextDisabled: {
+    color: '#C9C9C9',
+    textDecorationLine: 'line-through',
   },
   chipDay: {
     fontSize: 12,
@@ -330,6 +375,10 @@ const monthStyles = StyleSheet.create({
   },
   dayPast: {
     color: Colors.light.textMuted,
+    textDecorationLine: 'line-through',
+  },
+  dayBlocked: {
+    color: '#C9C9C9',
     textDecorationLine: 'line-through',
   },
   daySelected: { color: '#FFFFFF' },

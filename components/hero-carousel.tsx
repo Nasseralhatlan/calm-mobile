@@ -26,13 +26,28 @@ interface HeroCarouselProps {
   photos: string[];
   scrollY?: SharedValue<number>;
   onPhotoPress?: (index: number) => void;
+  /** Fired once the user swipes to a different photo. */
+  onSwipe?: () => void;
   bottomInset?: number;
 }
 
-export function HeroCarousel({ photos, scrollY, onPhotoPress, bottomInset = 0 }: HeroCarouselProps) {
+export function HeroCarousel({
+  photos,
+  scrollY,
+  onPhotoPress,
+  onSwipe,
+  bottomInset = 0,
+}: HeroCarouselProps) {
   const [page, setPage] = useState(0);
   const scrollX = useSharedValue(0);
   const pageIndex = useDerivedValue(() => Math.round(scrollX.value / SCREEN_W));
+
+  const onSettle = (next: number) => {
+    setPage((prev) => {
+      if (next !== prev) onSwipe?.();
+      return next;
+    });
+  };
 
   const onScrollH = useAnimatedScrollHandler({
     onScroll: (e) => {
@@ -40,7 +55,7 @@ export function HeroCarousel({ photos, scrollY, onPhotoPress, bottomInset = 0 }:
     },
     onMomentumEnd: (e) => {
       const next = Math.round(e.contentOffset.x / SCREEN_W);
-      runOnJS(setPage)(next);
+      runOnJS(onSettle)(next);
     },
   });
 
@@ -92,12 +107,19 @@ export function HeroCarousel({ photos, scrollY, onPhotoPress, bottomInset = 0 }:
               key={url}
               onPress={() => onPhotoPress?.(i)}
               style={styles.heroSlide}>
-              <Image
-                source={{ uri: url }}
-                style={styles.hero}
-                contentFit="cover"
-                transition={200}
-              />
+              {/* Only the visible photo + its neighbours are mounted; the rest
+                  stay placeholders until swiped in (±1 keeps swipes instant). */}
+              {Math.abs(i - page) <= 1 ? (
+                <Image
+                  source={{ uri: url }}
+                  recyclingKey={url}
+                  style={styles.hero}
+                  contentFit="cover"
+                  transition={200}
+                />
+              ) : (
+                <View style={styles.hero} />
+              )}
             </Pressable>
           ))}
         </AnimatedGHScrollView>

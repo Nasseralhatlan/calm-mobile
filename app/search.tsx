@@ -1,7 +1,7 @@
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
@@ -16,20 +16,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MagnifierIcon } from '@/components/icons/magnifier-icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { ExpandableCard } from '@/components/search/expandable-card';
-import { HelpContent, type HelpAnswers } from '@/components/search/help-content';
+import { MultiSelectContent } from '@/components/search/multi-select-content';
 import { WhereContent } from '@/components/search/where-content';
-import { WhenContent, type DateRange } from '@/components/search/when-content';
-import { WhoContent, type GuestCounts } from '@/components/search/who-content';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
+import { useHomeData } from '@/data/home';
+import { saveLastSearch } from '@/data/last-search';
+import { setAppliedFilters } from '@/data/search-filters';
+import { useSelectedCity } from '@/data/selected-city';
+import type { ApiCity, ApiCityArea, ApiPlaceType } from '@/lib/api';
 import { fireHaptic } from '@/lib/haptics';
 import { useLocale, useT } from '@/lib/i18n';
 
-type CardKey = 'where' | 'when' | 'who' | 'help';
-
-const DEFAULT_GUESTS: GuestCounts = { total: 5 };
-const DEFAULT_HELP: HelpAnswers = { audience: null, activity: null, vibe: null };
+type CardKey = 'where' | 'type' | 'area';
 
 export default function SearchModal() {
   const router = useRouter();
@@ -37,13 +37,25 @@ export default function SearchModal() {
   const t = useT();
   const insets = useSafeAreaInsets();
 
-  const [expanded, setExpanded] = useState<CardKey>('when');
-  const [city, setCity] = useState(t({ ar: 'الرياض', en: 'Riyadh' }));
-  const [range, setRange] = useState<DateRange>({ start: null, end: null });
-  const [guests, setGuests] = useState<GuestCounts>(DEFAULT_GUESTS);
-  const [help, setHelp] = useState<HelpAnswers>(DEFAULT_HELP);
+  const { typeId } = useLocalSearchParams<{ typeId?: string }>();
+  const home = useHomeData();
+  const placeTypes = useMemo<ApiPlaceType[]>(() => home?.placeTypes ?? [], [home?.placeTypes]);
+  const { city: defaultCity } = useSelectedCity();
+
+  // City defaults to Riyadh, so open straight on the Type box (or Area when
+  // arriving from a home quick-type tile).
+  const [expanded, setExpanded] = useState<CardKey>(typeId ? 'area' : 'type');
+  const [city, setCity] = useState<ApiCity | null>(null);
+  const [types, setTypes] = useState<ApiPlaceType[]>([]);
+  const [availableAreas, setAvailableAreas] = useState<ApiCityArea[]>([]);
+  const [areas, setAreas] = useState<ApiCityArea[]>([]);
   const [searchFocused, setSearchFocused] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+
+  const typesInited = useRef(false);
+  // Arrived from a quick-type tile → jump to Area as soon as the city's areas
+  // are available (they load a tick after the default city is set).
+  const wantArea = useRef(!!typeId);
 
   const overlay = useSharedValue(0);
   const scale = useSharedValue(0.96);
@@ -52,6 +64,41 @@ export default function SearchModal() {
     overlay.value = withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) });
     scale.value = withSpring(1, { damping: 18, stiffness: 220, mass: 0.8 });
   }, [overlay, scale]);
+
+  // Default the city to the globally-selected one once bootstrap data lands.
+  useEffect(() => {
+    if (!city && defaultCity) setCity(defaultCity);
+  }, [city, defaultCity]);
+
+  // Types start unselected — unless the user arrived from a home quick-type
+  // tile, in which case just that one is pre-selected.
+  useEffect(() => {
+    if (typesInited.current || placeTypes.length === 0) return;
+    typesInited.current = true;
+    if (typeId) {
+      const picked = placeTypes.find((p) => p.id === typeId);
+      if (picked) setTypes([picked]);
+    }
+  }, [placeTypes, typeId]);
+
+  // Areas ship inline with the selected city. Start unselected; a city with no
+  // areas simply hides the Area box.
+  useEffect(() => {
+    setAvailableAreas(city?.areas ?? []);
+    setAreas([]);
+  }, [city?.id, city?.areas]);
+
+  // Open Area once it has options (for the quick-type entry); if the city has
+  // no areas, fall back to Type.
+  useEffect(() => {
+    if (wantArea.current && availableAreas.length > 0) {
+      wantArea.current = false;
+      setExpanded('area');
+    }
+  }, [availableAreas.length]);
+  useEffect(() => {
+    if (expanded === 'area' && availableAreas.length === 0) setExpanded('type');
+  }, [expanded, availableAreas.length]);
 
   const close = () => {
     scale.value = withTiming(0.96, { duration: 220, easing: Easing.in(Easing.cubic) });
@@ -66,67 +113,106 @@ export default function SearchModal() {
 
   const reset = () => {
     fireHaptic('select');
-    setCity(t({ ar: 'الرياض', en: 'Riyadh' }));
-    setRange({ start: null, end: null });
-    setGuests(DEFAULT_GUESTS);
-    setHelp(DEFAULT_HELP);
+    setCity(defaultCity ?? null);
+    setTypes([]);
+    setAreas([]);
     setSearchFocused(false);
-    setExpanded('when');
+    setExpanded('type');
     setResetKey((k) => k + 1);
   };
 
+  const cityLabel = city
+    ? locale === 'ar'
+      ? city.name_ar
+      : city.name_en
+    : t({ ar: 'اختر مدينة', en: 'Pick a city' });
+
   const handleSearch = () => {
-    router.replace({
-      pathname: '/results',
-      params: {
-        city,
-        startDate: range.start ? range.start.toISOString() : '',
-        endDate: range.end ? range.end.toISOString() : '',
-        guests: String(guests.total),
-        ...(help.audience ? { audience: help.audience } : {}),
-        ...(help.activity ? { activity: help.activity } : {}),
-        ...(help.vibe ? { vibe: help.vibe } : {}),
-      },
+    // The applied-filters store is the single source of truth for the query;
+    // a new search resets the advanced filters (price/guests/amenities).
+    const filters = {
+      cityId: city?.id ?? '',
+      cityLabel,
+      typeIds: types.map((p) => p.id),
+      areaIds: areas.map((a) => a.id),
+      amenityIds: [],
+      priceMin: null,
+      priceMax: null,
+      guests: null,
+    };
+    setAppliedFilters(filters);
+    // Remember it locally so the home screen can offer to resume this search.
+    void saveLastSearch({
+      filters,
+      city: city ? { ar: city.name_ar, en: city.name_en } : null,
+      areas: areas.map((a) => ({ ar: a.name_ar, en: a.name_en })),
+      types: types.map((p) => ({ ar: p.name_ar, en: p.name_en })),
+      // Filled in once results load (top-rated places' photos) — see results.tsx.
+      thumbs: [],
     });
+    router.replace('/results');
   };
 
   const toggle = (key: CardKey) => {
     setExpanded((prev) => (prev === key ? ('' as unknown as CardKey) : key));
   };
 
-  const guestsLabel = useMemo(() => {
-    if (!guests.total) return t({ ar: 'أضف ضيوف', en: 'Add guests' });
-    return `${guests.total} ${t({
-      ar: guests.total === 1 ? 'ضيف' : 'ضيف',
-      en: guests.total === 1 ? 'guest' : 'guests',
-    })}`;
-  }, [guests, t]);
+  const toggleType = (id: string) =>
+    setTypes((prev) =>
+      prev.some((p) => p.id === id)
+        ? prev.filter((p) => p.id !== id)
+        : placeTypes.filter((p) => p.id === id || prev.some((x) => x.id === p.id)),
+    );
+  const toggleAllTypes = () =>
+    setTypes((prev) => (prev.length === placeTypes.length ? [] : placeTypes));
 
-  const helpLabel = useMemo(() => {
-    const picks = [help.audience, help.activity, help.vibe].filter(Boolean).length;
-    if (picks === 0) return t({ ar: 'اختياري', en: 'Optional' });
-    if (picks === 3) return t({ ar: 'تم اختيار التفضيلات', en: 'Preferences set' });
-    return t({ ar: `${picks} / 3`, en: `${picks} of 3` });
-  }, [help, t]);
+  const toggleArea = (id: string) =>
+    setAreas((prev) =>
+      prev.some((a) => a.id === id)
+        ? prev.filter((a) => a.id !== id)
+        : availableAreas.filter((a) => a.id === id || prev.some((x) => x.id === a.id)),
+    );
+  const toggleAllAreas = () =>
+    setAreas((prev) => (prev.length === availableAreas.length ? [] : availableAreas));
 
-  const dateLabel = useMemo(() => {
-    if (!range.start) return t({ ar: 'اختر التواريخ', en: 'Pick dates' });
-    const fmt = (d: Date) =>
-      d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-    if (!range.end) {
-      return `${fmt(range.start)} — ${t({ ar: 'اختر المغادرة', en: 'Pick check-out' })}`;
-    }
-    return `${fmt(range.start)} — ${fmt(range.end)}`;
-  }, [range, t]);
+  const typeItems = useMemo(
+    () =>
+      placeTypes.map((p) => ({
+        id: p.id,
+        label: locale === 'ar' ? p.name_ar : p.name_en,
+        emoji: p.icon,
+      })),
+    [placeTypes, locale],
+  );
+  const areaItems = useMemo(
+    () =>
+      availableAreas.map((a) => ({
+        id: a.id,
+        label: locale === 'ar' ? a.name_ar : a.name_en,
+      })),
+    [availableAreas, locale],
+  );
+
+  const typeLabel = useMemo(() => {
+    if (placeTypes.length && types.length === placeTypes.length) return t({ ar: 'كل الأنواع', en: 'All types' });
+    if (types.length === 0) return t({ ar: 'اختر نوع', en: 'Pick a type' });
+    if (types.length === 1) return locale === 'ar' ? types[0].name_ar : types[0].name_en;
+    return `${types.length} ${t({ ar: 'أنواع', en: 'types' })}`;
+  }, [types, placeTypes, locale, t]);
+
+  const areaLabel = useMemo(() => {
+    if (availableAreas.length && areas.length === availableAreas.length) return t({ ar: 'كل المناطق', en: 'All areas' });
+    if (areas.length === 0) return t({ ar: 'اختر منطقة', en: 'Pick an area' });
+    if (areas.length === 1) return locale === 'ar' ? areas[0].name_ar : areas[0].name_en;
+    return `${areas.length} ${t({ ar: 'مناطق', en: 'areas' })}`;
+  }, [areas, availableAreas, locale, t]);
 
   const overlayStyle = useAnimatedStyle(() => ({ opacity: overlay.value }));
-  const contentStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const contentStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, overlayStyle]}>
-      <BlurView intensity={90 } tint="light" style={StyleSheet.absoluteFill} />
+      <BlurView intensity={90} tint="light" style={StyleSheet.absoluteFill} />
       <View style={styles.tint} pointerEvents="none" />
       <Pressable
         style={StyleSheet.absoluteFill}
@@ -143,99 +229,89 @@ export default function SearchModal() {
           contentStyle,
         ]}
         pointerEvents="box-none">
-          {/* Header: X (start) + calm logo (absolutely centered) */}
-          <View style={styles.header} pointerEvents="box-none">
-            <PressableScale onPress={close} scaleTo={0.88} haptic="back" style={styles.closeBtn}>
-              <IconSymbol name="xmark" size={18} color={Colors.light.text} />
-            </PressableScale>
-            <View style={styles.logoCenter} pointerEvents="none">
-              <Image
-                source={require('@/assets/logo/logo.png')}
-                style={styles.logo}
-                contentFit="contain"
-              />
-            </View>
+        {/* Header: X (start) + calm logo (absolutely centered) */}
+        <View style={styles.header} pointerEvents="box-none">
+          <PressableScale onPress={close} scaleTo={0.88} haptic="back" style={styles.closeBtn}>
+            <IconSymbol name="xmark" size={18} color={Colors.light.text} />
+          </PressableScale>
+          <View style={styles.logoCenter} pointerEvents="none">
+            <Image source={require('@/assets/logo/logo.png')} style={styles.logo} contentFit="contain" />
           </View>
+        </View>
 
-          {/* Three stacked cards */}
-          <View style={styles.cardsCol}>
-            <ExpandableCard
-              label={t({ ar: 'وين ؟', en: 'Where?' })}
+        {/* Stacked cards */}
+        <View style={styles.cardsCol}>
+          <ExpandableCard
+            label={t({ ar: 'وين ؟', en: 'Where?' })}
+            value={cityLabel}
+            expanded={expanded === 'where'}
+            edgeToEdge={expanded === 'where' && searchFocused}
+            onToggle={() => toggle('where')}>
+            <WhereContent
+              key={resetKey}
               value={city}
-              expanded={expanded === 'where'}
-              edgeToEdge={expanded === 'where' && searchFocused}
-              onToggle={() => toggle('where')}>
-              <WhereContent
-                key={resetKey}
-                value={city}
-                onChange={setCity}
-                onFocusChange={setSearchFocused}
-                onConfirm={() => {
-                  setSearchFocused(false);
-                  setExpanded('when');
-                }}
+              onChange={setCity}
+              onFocusChange={setSearchFocused}
+              onConfirm={() => {
+                setSearchFocused(false);
+                setExpanded('type');
+              }}
+            />
+          </ExpandableCard>
+
+          <ExpandableCard
+            label={t({ ar: 'نوع المكان ؟', en: 'Type of place?' })}
+            value={typeLabel}
+            expanded={expanded === 'type'}
+            onToggle={() => toggle('type')}>
+            <MultiSelectContent
+              items={typeItems}
+              selectedIds={types.map((p) => p.id)}
+              onToggle={toggleType}
+              onToggleAll={toggleAllTypes}
+              subtitle={t({ ar: 'اختر نوعاً أو أكثر', en: 'Pick one or more types' })}
+              onNext={() => (availableAreas.length > 0 ? setExpanded('area') : handleSearch())}
+              nextLabel={
+                availableAreas.length > 0
+                  ? t({ ar: 'التالي', en: 'Next' })
+                  : t({ ar: 'ابحث', en: 'Search' })
+              }
+            />
+          </ExpandableCard>
+
+          {availableAreas.length > 0 ? (
+            <ExpandableCard
+              label={t({ ar: 'المنطقة ؟', en: 'Area?' })}
+              value={areaLabel}
+              expanded={expanded === 'area'}
+              onToggle={() => toggle('area')}>
+              <MultiSelectContent
+                items={areaItems}
+                selectedIds={areas.map((a) => a.id)}
+                onToggle={toggleArea}
+                onToggleAll={toggleAllAreas}
+                subtitle={t({ ar: 'اختر منطقة أو أكثر', en: 'Pick one or more areas' })}
+                onNext={handleSearch}
+                nextLabel={t({ ar: 'ابحث', en: 'Search' })}
               />
             </ExpandableCard>
+          ) : null}
+        </View>
 
-            <ExpandableCard
-              label={t({ ar: 'متى ؟', en: 'When?' })}
-              value={dateLabel}
-              expanded={expanded === 'when'}
-              onToggle={() => toggle('when')}>
-              <WhenContent
-                range={range}
-                onChange={setRange}
-                onConfirm={() => setExpanded('help')}
-              />
-            </ExpandableCard>
-
-            <ExpandableCard
-              label={t({ ar: 'نساعدك تختار الأنسب ؟', en: 'Let us help you find the best ?' })}
-              value={helpLabel}
-              expanded={expanded === 'help'}
-              onToggle={() => toggle('help')}>
-              <HelpContent
-                answers={help}
-                onChange={setHelp}
-                onSkip={() => {
-                  setHelp(DEFAULT_HELP);
-                  setExpanded('who');
-                }}
-                onComplete={() => setExpanded('who')}
-              />
-            </ExpandableCard>
-
-            <ExpandableCard
-              label={t({ ar: 'كم شخص ؟', en: 'How many?' })}
-              value={guestsLabel}
-              expanded={expanded === 'who'}
-              onToggle={() => toggle('who')}>
-              <WhoContent value={guests} onChange={setGuests} />
-            </ExpandableCard>
-          </View>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Pressable onPress={reset} hitSlop={Spacing[3]}>
-              <ThemedText
-                style={[
-                  styles.resetText,
-                  { fontFamily: fontFamilyFor('medium', locale) },
-                ]}>
-                {t({ ar: 'امسح الكل', en: 'Clear all' })}
-              </ThemedText>
-            </Pressable>
-            <PressableScale onPress={handleSearch} scaleTo={0.95} haptic="forward" style={styles.searchBtn}>
-              <MagnifierIcon size={16} color="#FFFFFF" />
-              <ThemedText
-                style={[
-                  styles.searchText,
-                  { fontFamily: fontFamilyFor('bold', locale) },
-                ]}>
-                {t({ ar: 'ابحث', en: 'Search' })}
-              </ThemedText>
-            </PressableScale>
-          </View>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Pressable onPress={reset} hitSlop={Spacing[3]}>
+            <ThemedText style={[styles.resetText, { fontFamily: fontFamilyFor('medium', locale) }]}>
+              {t({ ar: 'امسح الكل', en: 'Clear all' })}
+            </ThemedText>
+          </Pressable>
+          <PressableScale onPress={handleSearch} scaleTo={0.95} haptic="forward" style={styles.searchBtn}>
+            <MagnifierIcon size={16} color="#FFFFFF" />
+            <ThemedText style={[styles.searchText, { fontFamily: fontFamilyFor('bold', locale) }]}>
+              {t({ ar: 'ابحث', en: 'Search' })}
+            </ThemedText>
+          </PressableScale>
+        </View>
       </Animated.View>
     </Animated.View>
   );

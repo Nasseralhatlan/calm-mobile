@@ -5,28 +5,13 @@ import { I18nManager, ScrollView, StyleSheet, TextInput, View } from 'react-nati
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
+import { useHomeData } from '@/data/home';
+import type { ApiCity } from '@/lib/api';
 import { useLocale, useT } from '@/lib/i18n';
 
-interface City {
-  id: string;
-  ar: string;
-  en: string;
-  emoji: string;
-}
-
-const CITIES: City[] = [
-  { id: 'riyadh', ar: 'الرياض', en: 'Riyadh', emoji: '🏙️' },
-  { id: 'jeddah', ar: 'جدة', en: 'Jeddah', emoji: '🌆' },
-  { id: 'dammam', ar: 'الدمام', en: 'Dammam', emoji: '🏖️' },
-  { id: 'makkah', ar: 'مكة', en: 'Makkah', emoji: '🕋' },
-  { id: 'madinah', ar: 'المدينة', en: 'Madinah', emoji: '🕌' },
-  { id: 'taif', ar: 'الطائف', en: 'Taif', emoji: '⛰️' },
-  { id: 'alula', ar: 'العلا', en: 'AlUla', emoji: '🏜️' },
-];
-
 interface WhereContentProps {
-  value: string;
-  onChange: (city: string) => void;
+  value: ApiCity | null;
+  onChange: (city: ApiCity) => void;
   onFocusChange?: (focused: boolean) => void;
   onConfirm?: () => void;
 }
@@ -34,19 +19,21 @@ interface WhereContentProps {
 export function WhereContent({ value, onChange, onFocusChange, onConfirm }: WhereContentProps) {
   const { locale } = useLocale();
   const t = useT();
+  const home = useHomeData();
+  const cities = home?.cities ?? [];
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return CITIES;
-    return CITIES.filter(
-      (c) => c.ar.includes(q) || c.en.toLowerCase().includes(q),
+    if (!q) return cities;
+    return cities.filter(
+      (c) => c.name_ar.includes(q) || c.name_en.toLowerCase().includes(q),
     );
-  }, [query]);
+  }, [query, cities]);
 
-  const handlePickCity = (city: City) => {
+  const handlePickCity = (city: ApiCity) => {
     Haptics.selectionAsync().catch(() => {});
-    onChange(locale === 'ar' ? city.ar : city.en);
+    onChange(city);
     onConfirm?.();
   };
 
@@ -81,8 +68,8 @@ export function WhereContent({ value, onChange, onFocusChange, onConfirm }: Wher
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets>
         {filtered.map((city) => {
-          const cityName = locale === 'ar' ? city.ar : city.en;
-          const selected = cityName === value;
+          const cityName = locale === 'ar' ? city.name_ar : city.name_en;
+          const selected = city.id === value?.id;
           return (
             <PressableScale
               key={city.id}
@@ -93,7 +80,7 @@ export function WhereContent({ value, onChange, onFocusChange, onConfirm }: Wher
                 { flexDirection: I18nManager.isRTL ? 'row' : 'row-reverse' },
               ]}>
               <View style={styles.iconBox}>
-                <ThemedText style={styles.iconEmoji}>{city.emoji}</ThemedText>
+                <ThemedText style={styles.iconEmoji}>{city.avatar}</ThemedText>
               </View>
               <ThemedText
                 style={[

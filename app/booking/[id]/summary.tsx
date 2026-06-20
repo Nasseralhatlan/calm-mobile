@@ -1,96 +1,36 @@
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { BackHandler, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { StarIcon } from '@/components/icons/star-icon';
 import { PressableScale } from '@/components/pressable-scale';
+import { Spinner } from '@/components/spinner';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors, Radius, Spacing, fontFamilyFor } from '@/constants/theme';
-import { getListing } from '@/data/listings';
-import { getService } from '@/data/services';
-import type { AddOnService } from '@/data/types';
-import { formatMoneyEn, nightsBetween } from '@/lib/format';
+import { useAuthState } from '@/data/auth-state';
+import { setConfirm } from '@/data/confirm-dialog';
+import { clearInterest } from '@/data/place-interest';
+import { fetchQuote } from '@/data/quote';
+import { useListingForId } from '@/hooks/use-listing-for-id';
+import { ApiError, createBooking, type ApiQuote } from '@/lib/api';
+import { formatSar } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 
 const TEXT_PRIMARY = '#000000';
 const TEXT_SECONDARY = '#6B7280';
 const TEXT_MUTED = '#9CA3AF';
-const DIVIDER = '#EBEBEB';
+const DIVIDER = '#F4F4F4';
 const SURFACE = '#F4F4F4';
 
-type PayMethod = 'apple_pay' | 'tabby' | 'tamara' | 'card';
-
-interface PayOptionDef {
-  key: PayMethod;
-  title: { ar: string; en: string };
-  subtitle?: { ar: string; en: string };
-  emoji: string;
-  accent?: string;
-}
-
-const PAY_OPTIONS: PayOptionDef[] = [
-  {
-    key: 'apple_pay',
-    title: { ar: 'Apple Pay', en: 'Apple Pay' },
-    subtitle: { ar: 'دفع سريع وآمن', en: 'Fast and secure checkout' },
-    emoji: '',
-  },
-  {
-    key: 'tabby',
-    title: { ar: 'تابي', en: 'Tabby' },
-    subtitle: { ar: 'قسّمها على ٤ دفعات بدون فوائد', en: 'Split into 4 interest-free payments' },
-    emoji: '🟢',
-    accent: '#3BCEAC',
-  },
-  {
-    key: 'tamara',
-    title: { ar: 'تمارا', en: 'Tamara' },
-    subtitle: { ar: 'ادفع بعد ٣٠ يوم أو على دفعات', en: 'Pay in 30 days or in 3 instalments' },
-    emoji: '🟣',
-    accent: '#FF8DB1',
-  },
-  {
-    key: 'card',
-    title: { ar: 'بطاقة ائتمان أو خصم', en: 'Credit or debit card' },
-    subtitle: { ar: 'Visa أو Mastercard أو mada', en: 'Visa, Mastercard, or mada' },
-    emoji: '💳',
-  },
-];
-
-function totalForService(service: AddOnService, qty: number, guests: number): number {
-  if (service.unit === 'flat') return qty > 0 ? service.price : 0;
-  if (service.unit === 'per_guest') return service.price * guests * qty;
-  return service.price * qty;
-}
-
-interface ServiceLine {
-  service: AddOnService;
-  qty: number;
-  total: number;
-}
-
-function parseServices(serialized: string | undefined, guests: number): ServiceLine[] {
-  if (!serialized) return [];
-  return serialized
-    .split(',')
-    .map((entry) => {
-      const [sid, qStr] = entry.split(':');
-      const service = getService(sid);
-      const qty = Number(qStr) || 0;
-      if (!service || qty <= 0) return null;
-      return { service, qty, total: totalForService(service, qty, guests) };
-    })
-    .filter((l): l is ServiceLine => l !== null);
-}
-
-function formatRangeEn(startISO: string, endISO: string): string {
-  const a = new Date(startISO);
-  const b = new Date(endISO);
+function formatRangeYmd(checkIn: string, checkOut: string): string {
+  const a = new Date(`${checkIn}T00:00:00`);
+  const b = new Date(`${checkOut}T00:00:00`);
   const fmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
   const yr = a.getFullYear();
+  if (checkIn === checkOut) return `${fmt.format(a)}, ${yr}`;
   if (a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()) {
     return `${fmt.format(a)} – ${b.getDate()}, ${yr}`;
   }
@@ -98,43 +38,42 @@ function formatRangeEn(startISO: string, endISO: string): string {
 }
 
 export default function BookingSummaryScreen() {
-  const { id, startDate, endDate, services } = useLocalSearchParams<{
+  const { id, checkIn, checkOut } = useLocalSearchParams<{
     id: string;
-    startDate?: string;
-    endDate?: string;
-    services?: string;
+    checkIn?: string;
+    checkOut?: string;
   }>();
   const router = useRouter();
   const t = useT();
   const { locale } = useLocale();
   const isRTL = locale === 'ar';
   const insets = useSafeAreaInsets();
-  const listing = getListing(id);
+  const { listing } = useListingForId(id);
+  const { isAuthed } = useAuthState();
 
-  const [payMethod, setPayMethod] = useState<PayMethod>('apple_pay');
+  const [processing, setProcessing] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  // Set when the user taps "Continue" while signed out — once they finish the
+  // login modal and come back authed, we resume straight to payment.
+  const resumeAfterLogin = useRef(false);
 
-  const guests = listing?.capacity.guests ?? 1;
-  const nights = useMemo(() => {
-    if (!startDate || !endDate) return 1;
-    return nightsBetween(startDate, endDate);
-  }, [startDate, endDate]);
+  // Quotes are never cached — always fetch a fresh price/availability on mount.
+  const [quote, setQuote] = useState<ApiQuote | null>(null);
 
-  const lines = useMemo(
-    () => (listing ? parseServices(services, guests) : []),
-    [services, guests, listing],
-  );
+  useEffect(() => {
+    if (!id || !checkIn || !checkOut) return;
+    let cancelled = false;
+    fetchQuote(id, checkIn, checkOut)
+      .then((q) => {
+        if (!cancelled) setQuote(q);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [id, checkIn, checkOut]);
 
-  const breakdown = useMemo(() => {
-    if (!listing) return null;
-    const subtotal = listing.pricing.nightly * nights;
-    const cleaningFee = listing.pricing.cleaningFee;
-    const serviceFee = listing.pricing.serviceFee;
-    const servicesTotal = lines.reduce((sum, l) => sum + l.total, 0);
-    const total = subtotal + cleaningFee + serviceFee + servicesTotal;
-    return { subtotal, cleaningFee, serviceFee, servicesTotal, total };
-  }, [listing, nights, lines]);
-
-  if (!listing || !breakdown) {
+  if (!listing) {
     return (
       <SafeAreaView style={styles.notFound}>
         <ThemedText variant="heading">Listing not found</ThemedText>
@@ -143,29 +82,115 @@ export default function BookingSummaryScreen() {
   }
 
   const dateLabel =
-    startDate && endDate
-      ? formatRangeEn(startDate, endDate)
+    checkIn && checkOut
+      ? formatRangeYmd(checkIn, checkOut)
       : t({ ar: 'لم يتم اختيار تواريخ', en: 'No dates selected' });
 
-  const guestsLabel = `${guests} ${t({ ar: guests === 1 ? 'ضيف' : 'ضيوف', en: guests === 1 ? 'guest' : 'guests' })}`;
-  const totalText = formatMoneyEn(breakdown.total, 2);
+  const totalText = quote ? formatSar(quote.pricing.total) : '—';
 
-  const ctaLabel = (() => {
-    switch (payMethod) {
-      case 'apple_pay':
-        return t({ ar: 'الدفع بـ Apple Pay', en: 'Pay with' });
-      case 'tabby':
-        return t({ ar: 'متابعة مع تابي', en: 'Continue with Tabby' });
-      case 'tamara':
-        return t({ ar: 'متابعة مع تمارا', en: 'Continue with Tamara' });
-      case 'card':
-        return t({ ar: 'الدفع بالبطاقة', en: 'Pay with card' });
-    }
-  })();
+  const canPay = !!quote?.bookable;
 
-  const onConfirm = () => {
-    router.replace(`/booking/${listing.id}/confirmation`);
+  const requestLeave = () => {
+    if (processing) return;
+    setConfirm({
+      title: t({ ar: 'هل تريد المغادرة؟', en: 'Leave checkout?' }),
+      message: t({
+        ar: 'سيتم تجاهل تفاصيل الحجز التي اخترتها.',
+        en: 'Your selected booking details will be discarded.',
+      }),
+      confirmLabel: t({ ar: 'مغادرة', en: 'Leave' }),
+      cancelLabel: t({ ar: 'البقاء', en: 'Stay' }),
+      destructive: true,
+      // The date modal was already dismissed when summary opened, so a single
+      // back returns to the listing.
+      onConfirm: () => router.back(),
+    });
+    router.push('/confirm');
   };
+
+  // Intercept the Android hardware back so it also asks before leaving.
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      requestLeave();
+      return true;
+    });
+    return () => sub.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [processing]);
+
+  const onContinue = async () => {
+    if (!canPay || !checkIn || !checkOut || processing) return;
+    if (!isAuthed) {
+      resumeAfterLogin.current = true;
+      router.push('/login');
+      return;
+    }
+
+    const placeId = listing.id;
+    setPayError(null);
+    setProcessing(true);
+    try {
+      // ③ Create the booking — server re-verifies price + holds the dates.
+      // guests is required by the booking validation; send the place's max for
+      // now (no guest picker yet, and guests don't affect the price).
+      const guestsToSend = quote?.max_guests ?? listing.capacity.guests ?? 1;
+      const booking = await createBooking(placeId, {
+        check_in: checkIn,
+        check_out: checkOut,
+        guests: guestsToSend,
+      });
+
+      // It's now a real (pending) booking in the Bookings tab — drop the local
+      // interest nudge so the home card doesn't duplicate it.
+      void clearInterest(placeId);
+
+      // ④ Open the Moyasar hosted page in an embedded WebView. That screen
+      // detects the return redirect, polls payment-status (⑤), and routes on.
+      router.push({
+        pathname: '/booking/[id]/pay',
+        params: {
+          id: placeId,
+          bookingId: booking.id,
+          paymentUrl: booking.payment.url,
+          // Forwarded to the after-payment screen so its summary card renders
+          // instantly, before the status poll comes back.
+          startDate: booking.start_date,
+          endDate: booking.end_date,
+          guests: String(booking.guests ?? guestsToSend),
+          total: String(booking.pricing.total),
+        },
+      });
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        router.push('/login');
+      } else if (e instanceof ApiError) {
+        // Surface the specific field error from a 422 instead of the generic
+        // "Validation failed", so it's clear what the backend rejected.
+        const errs = (e.payload as { errors?: Record<string, string[]> } | undefined)
+          ?.errors;
+        const firstField = errs ? Object.values(errs)[0] : undefined;
+        const detail = Array.isArray(firstField) ? firstField[0] : undefined;
+        setPayError(
+          detail ||
+            e.message ||
+            t({ ar: 'تعذر بدء الدفع، حاول مجدداً.', en: 'Could not start payment, try again.' }),
+        );
+      } else {
+        setPayError(t({ ar: 'حدث خطأ ما.', en: 'Something went wrong.' }));
+      }
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Resume the booking flow once the login modal returns us here signed in.
+  useEffect(() => {
+    if (isAuthed && resumeAfterLogin.current) {
+      resumeAfterLogin.current = false;
+      onContinue();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthed]);
 
   return (
     <View style={styles.container}>
@@ -174,7 +199,7 @@ export default function BookingSummaryScreen() {
         {/* Header */}
         <View style={styles.header}>
           <PressableScale
-            onPress={() => router.back()}
+            onPress={requestLeave}
             scaleTo={0.88}
             haptic="back"
             style={styles.closeBtn}>
@@ -263,129 +288,75 @@ export default function BookingSummaryScreen() {
               onAction={() =>
                 router.replace({
                   pathname: '/booking/[id]/dates',
-                  params: { id, startDate, endDate },
+                  params: { id, startDate: checkIn, endDate: checkOut },
                 })
               }
             />
 
             <View style={styles.cardDivider} />
 
-            <Row
-              isRTL={isRTL}
-              label={t({ ar: 'الضيوف', en: 'Guests' })}
-              value={guestsLabel}
-              action={t({ ar: 'تغيير', en: 'Change' })}
-              onAction={() => {}}
-            />
-
-            <View style={styles.cardDivider} />
-
-            <Row
-              isRTL={isRTL}
-              label={t({ ar: 'الإجمالي', en: 'Total price' })}
-              value={totalText}
-              action={t({ ar: 'تفاصيل', en: 'Details' })}
-              onAction={() => {}}
-            />
-
-            {lines.length > 0 ? (
-              <>
+            {/* Price breakdown from the quote (source of truth). */}
+            {quote ? (
+              <View style={styles.linesBlock}>
+                <PriceRow
+                  isRTL={isRTL}
+                  label={`${t({ ar: 'الإقامة', en: 'Stay' })} · ${quote.days} ${t({ ar: quote.days === 1 ? 'يوم' : 'أيام', en: quote.days === 1 ? 'day' : 'days' })}`}
+                  value={formatSar(quote.pricing.subtotal)}
+                />
+                <PriceRow
+                  isRTL={isRTL}
+                  label={`${t({ ar: 'ضريبة القيمة المضافة', en: 'VAT' })} (${quote.pricing.vat_percentage}%)`}
+                  value={formatSar(quote.pricing.vat)}
+                />
                 <View style={styles.cardDivider} />
-                <View style={styles.linesBlock}>
-                  <ThemedText
-                    style={[
-                      styles.linesTitle,
-                      {
-                        fontFamily: fontFamilyFor('bold', locale),
-                        textAlign: isRTL ? 'right' : 'left',
-                        writingDirection: isRTL ? 'rtl' : 'ltr',
-                      },
-                    ]}>
-                    {t({ ar: 'الخدمات الإضافية', en: 'Add-ons' })}
-                  </ThemedText>
-                  {lines.map((l, idx) => (
-                    <View
-                      key={l.service.id}
-                      style={[
-                        styles.lineRow,
-                        { flexDirection: isRTL ? 'row-reverse' : 'row' },
-                        idx < lines.length - 1 && styles.lineRowDivider,
-                      ]}>
-                      <ThemedText
-                        numberOfLines={1}
-                        style={[
-                          styles.lineLabel,
-                          {
-                            fontFamily: fontFamilyFor('regular', locale),
-                            textAlign: isRTL ? 'right' : 'left',
-                          },
-                        ]}>
-                        {t(l.service.title)} × {l.qty}
-                      </ThemedText>
-                      <ThemedText
-                        style={[
-                          styles.lineValue,
-                          { fontFamily: fontFamilyFor('bold', locale) },
-                        ]}>
-                        {formatMoneyEn(l.total, 0)}
-                      </ThemedText>
-                    </View>
-                  ))}
-                </View>
-              </>
-            ) : null}
+                <PriceRow
+                  isRTL={isRTL}
+                  emphasis
+                  label={t({ ar: 'الإجمالي', en: 'Total' })}
+                  value={totalText}
+                />
+              </View>
+            ) : (
+              <View style={styles.quoteLoading}>
+                <Spinner size={20} color={Colors.light.text} trackColor="rgba(0,0,0,0.12)" />
+              </View>
+            )}
           </View>
 
-          {/* Payment method */}
-          <View style={{ gap: Spacing[3] }}>
-            <ThemedText
-              style={[
-                styles.sectionTitle,
-                {
-                  fontFamily: fontFamilyFor('bold', locale),
-                  textAlign: isRTL ? 'right' : 'left',
-                  writingDirection: isRTL ? 'rtl' : 'ltr',
-                },
-              ]}>
-              {t({ ar: 'اختر طريقة الدفع', en: 'Payment method' })}
-            </ThemedText>
-
-            <View style={styles.payCard}>
-              {PAY_OPTIONS.map((opt, idx) => (
-                <View key={opt.key}>
-                  <PayOption
-                    isRTL={isRTL}
-                    option={opt}
-                    selected={payMethod === opt.key}
-                    onPress={() => setPayMethod(opt.key)}
-                  />
-                  {idx < PAY_OPTIONS.length - 1 ? <View style={styles.payDivider} /> : null}
-                </View>
-              ))}
-            </View>
-          </View>
         </ScrollView>
 
-        {/* Pay CTA — black, content depends on selection */}
+        {/* Continue to payment */}
         <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing[3] }]}>
+          {payError ? (
+            <ThemedText
+              style={[
+                styles.payError,
+                {
+                  fontFamily: fontFamilyFor('regular', locale),
+                  textAlign: 'center',
+                },
+              ]}>
+              {payError}
+            </ThemedText>
+          ) : null}
           <PressableScale
             haptic="forward"
             scaleTo={0.98}
-            onPress={onConfirm}
-            style={styles.payCta}>
-            <View
-              style={[
-                styles.payCtaInner,
-                { flexDirection: isRTL ? 'row-reverse' : 'row' },
-              ]}>
+            disabled={!canPay || processing}
+            onPress={onContinue}
+            style={
+              canPay && !processing
+                ? styles.payCta
+                : [styles.payCta, styles.payCtaDisabled]
+            }>
+            {!quote || processing ? (
+              <Spinner size={20} />
+            ) : (
               <ThemedText
                 style={[styles.payCtaText, { fontFamily: fontFamilyFor('bold', locale) }]}>
-                {ctaLabel}
+                {t({ ar: 'متابعة للدفع', en: 'Continue to payment' })}
               </ThemedText>
-              {payMethod === 'apple_pay' ? (
-                <ThemedText style={styles.applePayMark}>{' '} Pay</ThemedText>
-              ) : null}
-            </View>
+            )}
           </PressableScale>
           <ThemedText
             style={[
@@ -463,76 +434,49 @@ function Row({
   );
 }
 
-function PayOption({
-  option,
-  selected,
-  onPress,
+function PriceRow({
+  label,
+  value,
   isRTL,
+  emphasis,
 }: {
-  option: PayOptionDef;
-  selected: boolean;
-  onPress: () => void;
+  label: string;
+  value: string;
   isRTL: boolean;
+  emphasis?: boolean;
 }) {
   const { locale } = useLocale();
-  const t = useT();
   return (
-    <PressableScale
-      haptic="select"
-      scaleTo={0.99}
-      onPress={onPress}
+    <View
       style={[
-        styles.payOption,
+        styles.priceRow,
         { flexDirection: isRTL ? 'row-reverse' : 'row' },
       ]}>
-      <View
+      <ThemedText
+        numberOfLines={1}
         style={[
-          styles.payIconWrap,
-          option.accent ? { backgroundColor: option.accent + '22' } : null,
+          emphasis ? styles.priceLabelStrong : styles.priceLabel,
+          {
+            fontFamily: fontFamilyFor(emphasis ? 'bold' : 'regular', locale),
+            textAlign: isRTL ? 'right' : 'left',
+            writingDirection: isRTL ? 'rtl' : 'ltr',
+          },
         ]}>
-        {option.key === 'apple_pay' ? (
-          <ThemedText style={styles.applePayBadge}> Pay</ThemedText>
-        ) : (
-          <ThemedText style={styles.payEmoji}>{option.emoji}</ThemedText>
-        )}
-      </View>
-
-      <View style={{ flex: 1, gap: 2 }}>
-        <ThemedText
-          style={[
-            styles.payOptionTitle,
-            {
-              fontFamily: fontFamilyFor('bold', locale),
-              textAlign: isRTL ? 'right' : 'left',
-              writingDirection: isRTL ? 'rtl' : 'ltr',
-            },
-          ]}>
-          {t(option.title)}
-        </ThemedText>
-        {option.subtitle ? (
-          <ThemedText
-            style={[
-              styles.payOptionSub,
-              {
-                fontFamily: fontFamilyFor('regular', locale),
-                textAlign: isRTL ? 'right' : 'left',
-                writingDirection: isRTL ? 'rtl' : 'ltr',
-              },
-            ]}>
-            {t(option.subtitle)}
-          </ThemedText>
-        ) : null}
-      </View>
-
-      <View style={[styles.radioOuter, selected && styles.radioOuterSelected]}>
-        {selected ? <View style={styles.radioInner} /> : null}
-      </View>
-    </PressableScale>
+        {label}
+      </ThemedText>
+      <ThemedText
+        style={[
+          emphasis ? styles.priceValueStrong : styles.priceValue,
+          { fontFamily: fontFamilyFor('bold', locale) },
+        ]}>
+        {value}
+      </ThemedText>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: Colors.light.background },
   notFound: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   header: {
@@ -578,23 +522,28 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: Radius.lg,
+    borderRadius: 22,
     borderCurve: 'continuous',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: DIVIDER,
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[3],
+    borderWidth: 0.5,
+    borderColor: '#F4F4F4',
+    paddingHorizontal: Spacing[5],
+    paddingVertical: Spacing[4],
     marginTop: Spacing[4],
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.06,
+    shadowRadius: 25,
+    elevation: 6,
   },
   listingHead: {
-    paddingVertical: Spacing[3],
-    gap: Spacing[3],
+    paddingVertical: Spacing[2],
+    gap: Spacing[4],
     alignItems: 'center',
   },
   listingImage: {
     width: 72,
     height: 72,
-    borderRadius: Radius.md,
+    borderRadius: 18,
     borderCurve: 'continuous',
     backgroundColor: '#F3F4F6',
   },
@@ -719,13 +668,49 @@ const styles = StyleSheet.create({
     borderTopColor: DIVIDER,
     gap: Spacing[2],
   },
+  quoteLoading: {
+    paddingVertical: Spacing[5],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  priceRow: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing[3],
+    paddingVertical: 4,
+  },
+  priceLabel: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    color: TEXT_SECONDARY,
+  },
+  priceLabelStrong: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 21,
+    color: TEXT_PRIMARY,
+  },
+  priceValue: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: TEXT_PRIMARY,
+  },
+  priceValueStrong: {
+    fontSize: 16,
+    lineHeight: 22,
+    color: TEXT_PRIMARY,
+  },
   payCta: {
     backgroundColor: '#000000',
-    paddingVertical: Spacing[4],
-    borderRadius: Radius.lg,
+    paddingVertical: Spacing[4] + 2,
+    borderRadius: 18,
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  payCtaDisabled: {
+    opacity: 0.5,
   },
   payCtaInner: {
     alignItems: 'center',
@@ -746,5 +731,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     color: TEXT_MUTED,
+  },
+  payError: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#C53030',
+    marginBottom: Spacing[2],
   },
 });

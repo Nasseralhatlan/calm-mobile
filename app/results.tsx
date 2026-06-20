@@ -1,7 +1,8 @@
+import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { BlurView } from 'expo-blur';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ListingCard } from '@/components/listing-card';
@@ -9,73 +10,180 @@ import { PressableScale } from '@/components/pressable-scale';
 import { SkeletonCard } from '@/components/skeleton-card';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Radius, Shadows, Spacing, fontFamilyFor } from '@/constants/theme';
-import { LISTINGS } from '@/data/listings';
+import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
+import { adaptApiPlaceToListing } from '@/data/place-adapter';
+import {
+  loadLastSearch,
+  setLastSearchProgress,
+  setLastSearchThumbs,
+} from '@/data/last-search';
+import { getAppliedFilters, getFiltersVersion } from '@/data/search-filters';
 import type { Listing } from '@/data/types';
+import { searchPlaces, type ApiPlace } from '@/lib/api';
 import { useLocale, useT } from '@/lib/i18n';
 
 const HEADER_CONTENT_HEIGHT = 80;
-const MOCK_MULTIPLIER = 4;
+const PER_PAGE = 20;
+const MIN_SKELETON_MS = 400;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export default function ResultsScreen() {
   const router = useRouter();
   const t = useT();
   const { locale } = useLocale();
   const insets = useSafeAreaInsets();
-  const { city, startDate, endDate, guests } = useLocalSearchParams<{
-    city?: string;
-    startDate?: string;
-    endDate?: string;
-    guests?: string;
-  }>();
 
-  const [loading, setLoading] = useState(true);
   const headerHeight = insets.top + HEADER_CONTENT_HEIGHT;
 
-  useEffect(() => {
-    const id = setTimeout(() => setLoading(false), 420);
-    return () => clearTimeout(id);
+  const [items, setItems] = useState<ApiPlace[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  // Re-render the header when filters change (cityLabel / count).
+  const [, force] = useState(0);
+  const versionRef = useRef(-1);
+
+  // Opened from the home "continue your last search" card → resume scroll spot.
+  const { resume } = useLocalSearchParams<{ resume?: string }>();
+  const listRef = useRef<FlashListRef<Listing>>(null);
+  const didResumeRef = useRef(false);
+  const progressRef = useRef(0);
+  // Stable handlers (FlashList requires these not to change between renders).
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: { index: number | null }[] }) => {
+      const idxs = viewableItems
+        .map((v) => v.index)
+        .filter((i): i is number => i != null);
+      if (idxs.length) progressRef.current = Math.min(...idxs);
+    },
+  ).current;
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
+
+  const city = getAppliedFilters().cityLabel;
+
+  const load = useCallback(async (nextPage: number) => {
+    const f = getAppliedFilters();
+    if (!f.cityId) {
+      setItems([]);
+      setHasMore(false);
+      setTotal(0);
+      return null;
+    }
+    // The API filters by a single area; only narrow when exactly one is picked.
+    const cityAreaId = f.areaIds.length === 1 ? f.areaIds[0] : undefined;
+    const res = await searchPlaces({
+      city_id: f.cityId,
+      place_type_ids: f.typeIds.length ? f.typeIds : undefined,
+      city_area_id: cityAreaId,
+      amenities: f.amenityIds.length ? f.amenityIds : undefined,
+      price_min: f.priceMin ?? undefined,
+      price_max: f.priceMax ?? undefined,
+      guests: f.guests ?? undefined,
+      page: nextPage,
+      per_page: PER_PAGE,
+    });
+    setItems((prev) => (nextPage === 1 ? res.items : [...prev, ...res.items]));
+    setHasMore(res.pagination.has_more);
+    setTotal(res.pagination.total);
+    setPage(res.pagination.page);
+
+    // Tag the saved "last search" with the top-3-rated results' photos so the
+    // home resume card shows a stacked deck of real place images.
+    if (nextPage === 1) {
+      const thumbs = [...res.items]
+        .sort(
+          (a, b) =>
+            (b.rating.avg ?? 0) - (a.rating.avg ?? 0) ||
+            b.rating.count - a.rating.count,
+        )
+        .map((p) => p.cover_photo_url)
+        .filter((u): u is string => !!u)
+        .slice(0, 3);
+      void setLastSearchThumbs(thumbs);
+    }
+    return res;
   }, []);
 
-  const results = useMemo<Listing[]>(
-    () => Array.from({ length: MOCK_MULTIPLIER }).flatMap(() => LISTINGS),
-    [],
+  // Run on first mount, and whenever the applied filters change (e.g. after the
+  // filters modal closes). Skeletons show on a fresh query; otherwise it's a
+  // silent refresh.
+  useFocusEffect(
+    useCallback(() => {
+      const v = getFiltersVersion();
+      if (v === versionRef.current) return; // nothing changed since last load
+      versionRef.current = v;
+      force((n) => n + 1); // refresh header label
+      let active = true;
+      setLoading(true);
+
+      (async () => {
+        try {
+          // Resume: load up to the page the user had reached, then scroll back
+          // to the item they were last looking at.
+          if (resume === '1' && !didResumeRef.current) {
+            didResumeRef.current = true;
+            const idx = (await loadLastSearch())?.progressIndex ?? 0;
+            const needed = Math.max(1, Math.floor(idx / PER_PAGE) + 1);
+            let loaded = 0;
+            let more = true;
+            for (let p = 1; p <= needed && more && active; p++) {
+              const r = await load(p);
+              if (!r) break;
+              loaded += r.items.length;
+              more = r.pagination.has_more;
+            }
+            await sleep(MIN_SKELETON_MS);
+            if (!active) return;
+            setLoading(false);
+            const target = Math.min(idx, Math.max(0, loaded - 1));
+            if (target > 0) {
+              requestAnimationFrame(() =>
+                listRef.current?.scrollToIndex({
+                  index: target,
+                  animated: false,
+                }),
+              );
+            }
+            return;
+          }
+
+          await Promise.all([load(1), sleep(MIN_SKELETON_MS)]);
+          if (active) setLoading(false);
+        } catch {
+          if (active) {
+            setItems([]);
+            setHasMore(false);
+            setTotal(0);
+            setLoading(false);
+          }
+        }
+      })();
+
+      // Persist where the user stopped so the home card can resume here.
+      return () => {
+        active = false;
+        void setLastSearchProgress(progressRef.current);
+      };
+    }, [load, resume]),
   );
 
-  const dateLabel = useMemo(() => {
-    const parse = (s?: string) => {
-      if (!s) return null;
-      const d = new Date(s);
-      return Number.isNaN(d.getTime()) ? null : d;
-    };
-    const fmt = (d: Date) =>
-      d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-    const s = parse(startDate);
-    const e = parse(endDate);
-    if (s && e) return `${fmt(s)} — ${fmt(e)}`;
-    if (s) return fmt(s);
-    return null;
-  }, [startDate, endDate]);
+  const onEndReached = () => {
+    if (loading || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    load(page + 1)
+      .catch(() => setHasMore(false))
+      .finally(() => setLoadingMore(false));
+  };
 
-  const guestCount = useMemo(() => {
-    if (!guests) return null;
-    const n = Number(guests);
-    return Number.isNaN(n) ? null : n;
-  }, [guests]);
+  const listings = useMemo(() => items.map((p) => adaptApiPlaceToListing(p)), [items]);
 
   const summarySubLine = useMemo(() => {
-    const parts: string[] = [];
-    if (dateLabel) parts.push(dateLabel);
-    if (guestCount && guestCount > 0) {
-      parts.push(
-        `${guestCount} ${t({
-          ar: guestCount === 1 ? 'ضيف' : 'ضيوف',
-          en: guestCount === 1 ? 'guest' : 'guests',
-        })}`,
-      );
-    }
-    return parts.join(' · ');
-  }, [dateLabel, guestCount, t]);
+    if (loading) return '';
+    return `${total} ${t({ ar: total === 1 ? 'نتيجة' : 'نتيجة', en: total === 1 ? 'result' : 'results' })}`;
+  }, [loading, total, t]);
 
   const goHome = () => {
     router.dismissAll();
@@ -89,40 +197,59 @@ export default function ResultsScreen() {
     router.push('/search');
   };
 
-  const openQuickFilters = () => {
-    router.push('/quick-filters');
-  };
-
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <FlatList
-        data={loading ? Array.from({ length: 3 }) : results}
-        keyExtractor={(item, i) => (loading ? `s${i}` : `${(item as Listing).id}-${i}`)}
-        renderItem={({ item }) =>
-          loading ? (
-            <SkeletonCard />
-          ) : (
-            <ListingCard
-              listing={item as Listing}
-              startDate={startDate || undefined}
-              endDate={endDate || undefined}
-            />
-          )
-        }
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scroll,
-          {
+      {loading ? (
+        <View
+          style={[
+            styles.scroll,
+            { paddingTop: headerHeight + Spacing[10] },
+          ]}>
+          {[0, 1, 2].map((i) => (
+            <SkeletonCard key={`s${i}`} />
+          ))}
+        </View>
+      ) : listings.length === 0 ? (
+        <View style={styles.emptyCenter}>
+          <ThemedText
+            style={[styles.emptyTitle, { fontFamily: fontFamilyFor('bold', locale) }]}>
+            {t({ ar: 'لا توجد نتائج', en: 'No results' })}
+          </ThemedText>
+          <ThemedText
+            style={[styles.emptyBody, { fontFamily: fontFamilyFor('regular', locale) }]}>
+            {t({
+              ar: 'جرّب تغيير الفلاتر أو المنطقة.',
+              en: 'Try adjusting your filters.',
+            })}
+          </ThemedText>
+          <PressableScale onPress={openFilters} scaleTo={0.97} haptic="select" style={styles.emptyBtn}>
+            <ThemedText
+              style={[styles.emptyBtnText, { fontFamily: fontFamilyFor('bold', locale) }]}>
+              {t({ ar: 'تعديل الفلاتر', en: 'Adjust filters' })}
+            </ThemedText>
+          </PressableScale>
+        </View>
+      ) : (
+        <FlashList
+          ref={listRef}
+          data={listings}
+          keyExtractor={(l) => l.id}
+          renderItem={({ item }) => <ListingCard listing={item} />}
+          showsVerticalScrollIndicator={false}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          contentContainerStyle={{
             paddingTop: headerHeight + Spacing[10],
             paddingBottom: insets.bottom + 120,
-          },
-        ]}
-        removeClippedSubviews
-        initialNumToRender={5}
-        windowSize={5}
-      />
+            paddingHorizontal: Spacing[5],
+          }}
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={loadingMore ? <SkeletonCard /> : null}
+        />
+      )}
 
       <View style={[styles.headerWrap, { paddingTop: insets.top }]}>
         <BlurView intensity={70} tint="light" style={StyleSheet.absoluteFillObject} />
@@ -163,26 +290,12 @@ export default function ResultsScreen() {
           </PressableScale>
         </View>
       </View>
-
-      <View
-        pointerEvents="box-none"
-        style={[styles.fabWrap, { bottom: insets.bottom + Spacing[5] }]}>
-        <PressableScale onPress={openQuickFilters} scaleTo={0.95} style={styles.fab}>
-          <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFillObject} />
-          <View style={styles.fabTint} />
-          <ThemedText style={styles.fabEmoji}>✨</ThemedText>
-          <ThemedText
-            style={[styles.fabText, { fontFamily: fontFamilyFor('medium', locale) }]}>
-            {t({ ar: 'ساعدني أجد الأفضل', en: 'Help me find the best' })}
-          </ThemedText>
-        </PressableScale>
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: Colors.light.background },
 
   headerWrap: {
     position: 'absolute',
@@ -233,11 +346,13 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   summaryTitle: {
+    flexShrink: 1,
     fontSize: 14,
     lineHeight: 18,
     color: Colors.light.text,
   },
   summarySub: {
+    flexShrink: 1,
     fontSize: 12,
     lineHeight: 16,
     color: Colors.light.textMuted,
@@ -247,34 +362,37 @@ const styles = StyleSheet.create({
   scroll: {
     paddingHorizontal: Spacing[5],
   },
-
-  fabWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
+  emptyCenter: {
+    flex: 1,
     alignItems: 'center',
-  },
-  fab: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing[8],
     gap: Spacing[2],
-    paddingHorizontal: Spacing[5],
-    paddingVertical: Spacing[3],
-    borderRadius: Radius.pill,
-    overflow: 'hidden',
-    ...Shadows.modal,
   },
-  fabTint: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(45, 45, 45, 0.85)',
+  emptyTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+    color: Colors.light.text,
+    textAlign: 'center',
   },
-  fabEmoji: {
-    fontSize: 16,
-    lineHeight: 20,
+  emptyBody: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: Colors.light.textMuted,
+    textAlign: 'center',
   },
-  fabText: {
+  emptyBtn: {
+    marginTop: Spacing[4],
+    alignSelf: 'center',
+    backgroundColor: '#000000',
+    paddingHorizontal: Spacing[6],
+    paddingVertical: Spacing[4],
+    borderRadius: 14,
+    borderCurve: 'continuous',
+  },
+  emptyBtnText: {
     color: '#FFFFFF',
     fontSize: 14,
-    lineHeight: 18,
+    lineHeight: 19,
   },
 });
