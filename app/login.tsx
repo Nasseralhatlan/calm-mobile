@@ -2,7 +2,6 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
-  I18nManager,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -39,7 +38,7 @@ import {
   type ApiOtpRequestResponse,
 } from "@/lib/api";
 import { fireHaptic } from "@/lib/haptics";
-import { useLocale, useT } from "@/lib/i18n";
+import { LAYOUT_RTL, useLocale, useT } from "@/lib/i18n";
 
 type Step = "phone" | "otp";
 
@@ -621,20 +620,20 @@ const styles = StyleSheet.create({
         lineHeight: 30,
         color: Colors.light.text,
         textAlign: "center",
-        writingDirection: "rtl",
+        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
     subtitle: {
         fontSize: 15,
         lineHeight: 22,
         color: Colors.light.textMuted,
         textAlign: "center",
-        writingDirection: "rtl",
+        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
         marginBottom: Spacing[4],
         paddingHorizontal: Spacing[3],
     },
 
     phoneRow: {
-        flexDirection: I18nManager.isRTL ? "row-reverse" : "row",
+        flexDirection: "row",
         alignItems: "stretch",
         gap: Spacing[2],
         height: 66,
@@ -697,7 +696,7 @@ const styles = StyleSheet.create({
     },
 
     timerRow: {
-        flexDirection: I18nManager.isRTL ? "row-reverse" : "row",
+        flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
         gap: Spacing[3],
@@ -738,6 +737,6 @@ const styles = StyleSheet.create({
         color: "#C53030",
         marginTop: Spacing[3],
         textAlign: "center",
-        writingDirection: "rtl",
+        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
 });

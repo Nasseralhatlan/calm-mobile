@@ -3,6 +3,7 @@ import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { useRouter, useSegments } from "expo-router";
 import { I18nManager, ScrollView, StyleSheet, View } from "react-native";
+import RNRestart from "react-native-restart";
 import {
     SafeAreaView,
     useSafeAreaInsets,
@@ -10,6 +11,7 @@ import {
 
 import { AboutIcon } from "@/components/icons/about-icon";
 import { ContactIcon } from "@/components/icons/contact-icon";
+import { LanguageIcon } from "@/components/icons/language-icon";
 import { PolicyIcon } from "@/components/icons/policy-icon";
 import { PrivacyIcon } from "@/components/icons/privacy-icon";
 import { SignOutIcon } from "@/components/icons/sign-out-icon";
@@ -26,7 +28,8 @@ import {
 } from "@/constants/theme";
 import { useAuthState } from "@/data/auth-state";
 import { setConfirm } from "@/data/confirm-dialog";
-import { useLocale, useT } from "@/lib/i18n";
+import { setStoredLocale } from "@/data/locale-setting";
+import { LAYOUT_RTL, LOCALE_SWITCHING_ENABLED, useLocale, useT } from "@/lib/i18n";
 
 type MenuIcon = (props: {
     size?: number;
@@ -102,7 +105,49 @@ export default function ProfileScreen() {
           ).format(new Date(`${user.birth_date}T00:00:00`))
         : "—";
 
+    // Switch the app language/direction via a confirmation (like Log out, but a
+    // black button). On confirm: persist the choice, flip the native canvas, and
+    // restart so RN re-lays-out in the new direction.
+    const switchLanguage = () => {
+        const next = locale === "ar" ? "en" : "ar";
+        setConfirm({
+            title: t({ ar: "تغيير اللغة", en: "Change language" }),
+            message: t({
+                ar: "سيُعاد تشغيل التطبيق لتطبيق اللغة الجديدة.",
+                en: "The app will restart to apply the new language.",
+            }),
+            confirmLabel: next === "ar" ? "العربية" : "English",
+            cancelLabel: t({ ar: "إلغاء", en: "Cancel" }),
+            onConfirm: async () => {
+                // Persist BEFORE restarting so the boot reconcile reads the new
+                // value (otherwise it would flip back).
+                await setStoredLocale(next);
+                I18nManager.allowRTL(true);
+                I18nManager.forceRTL(next === "ar");
+                try {
+                    RNRestart.restart();
+                } catch {
+                    /* dev/Expo Go: applies on next manual reload */
+                }
+            },
+        });
+        router.push("/confirm");
+    };
+
     const menuItems: MenuItemConfig[] = [
+        // Language toggle hidden while Arabic/RTL is disabled (see
+        // LOCALE_SWITCHING_ENABLED in lib/i18n).
+        ...(LOCALE_SWITCHING_ENABLED
+            ? [
+                  {
+                      key: "language",
+                      Icon: LanguageIcon,
+                      // Label is the language you'd switch TO (not translated).
+                      label: locale === "ar" ? "English" : "العربية",
+                      onPress: switchLanguage,
+                  },
+              ]
+            : []),
         {
             key: "contact",
             Icon: ContactIcon,
@@ -575,18 +620,18 @@ const styles = StyleSheet.create({
         fontSize: 22,
         lineHeight: 28,
         color: TEXT_PRIMARY,
-        textAlign: "right",
-        writingDirection: "rtl",
+        textAlign: LAYOUT_RTL ? "right" : "left",
+        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
     subtitle: {
         fontSize: 13,
         lineHeight: 20,
         color: TEXT_SECONDARY,
-        textAlign: "right",
-        writingDirection: "rtl",
+        textAlign: LAYOUT_RTL ? "right" : "left",
+        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
 
-    ctaWrap: { alignItems: I18nManager.isRTL ? "flex-start" : "flex-end" },
+    ctaWrap: { alignItems: "flex-start" },
     loginBtn: {
         paddingHorizontal: Spacing[6],
         paddingVertical: Spacing[4],
@@ -619,9 +664,7 @@ const styles = StyleSheet.create({
     },
     cardTopRow: {
         flexDirection: "row",
-        // RN flips `row` under RTL, so flex-end keeps the chip on the physical
-        // left in both directions.
-        justifyContent: I18nManager.isRTL ? "flex-end" : "flex-start",
+        justifyContent: "flex-end",
         alignItems: "center",
     },
     cardDivider: {
@@ -629,7 +672,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#EEEEEE",
     },
     userRow: {
-        flexDirection: I18nManager.isRTL ? "row" : "row-reverse",
+        flexDirection: "row",
         alignItems: "center",
         gap: Spacing[5],
     },
@@ -679,7 +722,7 @@ const styles = StyleSheet.create({
         gap: Spacing[2],
     },
     userFieldRow: {
-        flexDirection: I18nManager.isRTL ? "row" : "row-reverse",
+        flexDirection: "row",
         alignItems: "center",
         gap: Spacing[3],
     },
@@ -688,7 +731,7 @@ const styles = StyleSheet.create({
         lineHeight: 20,
         color: TEXT_PRIMARY,
         width: "30%",
-        textAlign: "right",
+        textAlign: LAYOUT_RTL ? "right" : "left",
     },
     userFieldValue: {
         fontSize: 15,
@@ -696,7 +739,7 @@ const styles = StyleSheet.create({
         color: TEXT_SECONDARY,
         flexShrink: 1,
         width: "70%",
-        textAlign: "right",
+        textAlign: LAYOUT_RTL ? "right" : "left",
     },
 
     hostCard: {
@@ -712,15 +755,15 @@ const styles = StyleSheet.create({
         fontSize: 15,
         lineHeight: 20,
         color: TEXT_PRIMARY,
-        textAlign: "right",
-        writingDirection: "rtl",
+        textAlign: LAYOUT_RTL ? "right" : "left",
+        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
     hostSubtitle: {
         fontSize: 13,
         lineHeight: 20,
         color: TEXT_SECONDARY,
-        textAlign: "right",
-        writingDirection: "rtl",
+        textAlign: LAYOUT_RTL ? "right" : "left",
+        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
 
     divider: {
@@ -733,7 +776,7 @@ const styles = StyleSheet.create({
         gap: Spacing[1],
     },
     menuRow: {
-        flexDirection: I18nManager.isRTL ? "row" : "row-reverse",
+        flexDirection: "row",
         alignItems: "center",
         gap: Spacing[3],
         paddingVertical: Spacing[3],
@@ -750,8 +793,8 @@ const styles = StyleSheet.create({
         fontSize: 15,
         lineHeight: 20,
         color: TEXT_PRIMARY,
-        textAlign: "right",
-        writingDirection: "rtl",
+        textAlign: LAYOUT_RTL ? "right" : "left",
+        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
 
     footer: {
@@ -771,7 +814,7 @@ const styles = StyleSheet.create({
         lineHeight: 16,
         color: "#D5D5D5",
         textAlign: "center",
-        writingDirection: "rtl",
+        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
 
     fabWrap: {

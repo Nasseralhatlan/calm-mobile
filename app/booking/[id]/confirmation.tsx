@@ -135,7 +135,7 @@ export default function ConfirmationScreen() {
               <View
                 style={[
                   styles.cardRow,
-                  { flexDirection: isRTL ? 'row-reverse' : 'row' },
+                  { flexDirection: 'row' },
                 ]}>
                 <Image
                   source={{ uri: listing.photos[0] }}

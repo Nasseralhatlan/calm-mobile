@@ -73,7 +73,7 @@ export function ViewAllCard({
         </View>
       </View>
 
-      <View style={[styles.labelRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+      <View style={[styles.labelRow, { flexDirection: 'row' }]}>
         <ThemedText
           style={[styles.label, { fontFamily: fontFamilyFor('bold', locale) }]}>
           {t({ ar: 'عرض الكل', en: 'View all' })}

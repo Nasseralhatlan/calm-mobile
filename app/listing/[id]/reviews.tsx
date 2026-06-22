@@ -30,7 +30,7 @@ export default function ReviewsModal() {
   const { locale } = useLocale();
   const t = useT();
   const isRTL = locale === 'ar';
-  const rowDir = isRTL ? 'row-reverse' : 'row';
+  const rowDir = 'row' as const;
 
   const { listing, apiDetail } = useListingForId(id);
   // Published reviews from the API (up to 10).

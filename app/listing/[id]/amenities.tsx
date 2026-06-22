@@ -33,7 +33,7 @@ export default function AmenitiesModal() {
   const { locale } = useLocale();
   const t = useT();
   const isRTL = locale === 'ar';
-  const rowDir = isRTL ? 'row-reverse' : 'row';
+  const rowDir = 'row' as const;
 
   const { listing, apiDetail } = useListingForId(id);
 

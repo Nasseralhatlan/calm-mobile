@@ -1,10 +1,12 @@
 import { Image } from "expo-image";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Linking, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CircularTimer } from "@/components/circular-timer";
+import { LocationPinIcon } from "@/components/icons/location-pin-icon";
+import { ShareIcon } from "@/components/icons/share-icon";
 import { StarIcon } from "@/components/icons/star-icon";
 import { SupportIcon } from "@/components/icons/support-icon";
 import { PressableScale } from "@/components/pressable-scale";
@@ -22,8 +24,14 @@ import {
     type ReviewApiStatus,
 } from "@/lib/api";
 import { useCountdown } from "@/lib/countdown";
-import { daysBetweenInclusive, formatSar } from "@/lib/format";
+import {
+    addDaysIso,
+    daysBetweenInclusive,
+    formatDateTime,
+    formatSar,
+} from "@/lib/format";
 import { useLocale, useT } from "@/lib/i18n";
+import { shareText } from "@/lib/share";
 
 const STAR_ON = "#FBBF24";
 const STAR_OFF = "#E5E7EB";
@@ -31,26 +39,6 @@ const STAR_OFF = "#E5E7EB";
 const TEXT_PRIMARY = "#000000";
 const TEXT_SECONDARY = "#6B7280";
 const DIVIDER = "#EEEEEE";
-
-function formatDate(iso: string, locale: "ar" | "en"): string {
-    // Force the Gregorian calendar (ar-SA defaults to Hijri).
-    return new Intl.DateTimeFormat(
-        locale === "ar" ? "ar-SA-u-ca-gregory" : "en-US",
-        {
-            weekday: "short",
-            day: "numeric",
-            month: "short",
-        },
-    ).format(new Date(`${iso}T00:00:00`));
-}
-
-function formatTime(t24: string): string {
-    const [hStr, mStr] = t24.split(":");
-    const h = Number(hStr);
-    const ap = h >= 12 ? "PM" : "AM";
-    const h12 = ((h + 11) % 12) + 1;
-    return `${h12}:${(mStr ?? "00").padStart(2, "0")} ${ap}`;
-}
 
 export default function BookingInfoScreen() {
     const { locale } = useLocale();
@@ -132,8 +120,43 @@ export default function BookingInfoScreen() {
     const days = daysBetweenInclusive(booking.start_date, booking.end_date);
     const p = booking.pricing;
 
+    // Checkout date comes straight from the backend's resolved checkout_at (date
+    // part) — already shifted to the next day for overnight bookings. We pair it
+    // with check_out_time for display (avoids the UTC offset shifting the clock).
+    const checkoutNextDay = booking.checkout_next_day ?? false;
+    const checkOutDate = booking.checkout_at
+        ? booking.checkout_at.slice(0, 10)
+        : checkoutNextDay
+            ? addDaysIso(booking.end_date, 1)
+            : booking.end_date;
+    const checkOutValue =
+        formatDateTime(checkOutDate, booking.check_out_time, locale) +
+        (checkoutNextDay ? ` (${t({ ar: "اليوم التالي", en: "next day" })})` : "");
+
     // Native sheet presented ABOVE this screen — this stays mounted underneath.
     const onSupport = () => router.push("/support");
+
+    // Directions: the backend only attaches place.location_url once the booking
+    // is confirmed/completed, so the button shows only when the venue is known.
+    const directionsUrl = place?.location_url ?? null;
+    const openDirections = () => {
+        if (directionsUrl) Linking.openURL(directionsUrl).catch(() => {});
+    };
+
+    // Share the booking as a friendly invite: title, location, dates, and the
+    // map link when available.
+    const onShareBooking = () => {
+        const message = [
+            t({ ar: `انضمّوا إليّ في «${title}» 🎉`, en: `Join me at ${title} 🎉` }),
+            location,
+            `${t({ ar: "الوصول", en: "Check-in" })}: ${formatDateTime(booking.start_date, booking.check_in_time, locale)}`,
+            `${t({ ar: "المغادرة", en: "Check-out" })}: ${checkOutValue}`,
+            directionsUrl,
+        ]
+            .filter(Boolean)
+            .join("\n");
+        shareText(message, title);
+    };
 
     const openLeaveReview = () =>
         router.push({
@@ -196,7 +219,7 @@ export default function BookingInfoScreen() {
         <View
             style={[
                 styles.row,
-                { flexDirection: isRTL ? "row-reverse" : "row" },
+                { flexDirection: "row" },
             ]}
         >
             <ThemedText
@@ -238,26 +261,40 @@ export default function BookingInfoScreen() {
                             color={TEXT_PRIMARY}
                         />
                     </PressableScale>
-                    <PressableScale
-                        onPress={onSupport}
-                        scaleTo={0.95}
-                        haptic="select"
-                        style={styles.supportBtn}
-                    >
-                        <SupportIcon
-                            size={18}
-                            color="#FFFFFF"
-                            strokeWidth={1.7}
-                        />
-                        <ThemedText
-                            style={[
-                                styles.supportText,
-                                { fontFamily: fontFamilyFor("bold", locale) },
-                            ]}
+                    <View style={styles.headerActions}>
+                        <PressableScale
+                            onPress={onShareBooking}
+                            scaleTo={0.88}
+                            haptic="select"
+                            style={styles.shareBtn}
                         >
-                            {t({ ar: "الدعم", en: "Support" })}
-                        </ThemedText>
-                    </PressableScale>
+                            <ShareIcon
+                                size={17}
+                                stroke={TEXT_PRIMARY}
+                                strokeWidth={1.9}
+                            />
+                        </PressableScale>
+                        <PressableScale
+                            onPress={onSupport}
+                            scaleTo={0.95}
+                            haptic="select"
+                            style={styles.supportBtn}
+                        >
+                            <SupportIcon
+                                size={18}
+                                color="#FFFFFF"
+                                strokeWidth={1.7}
+                            />
+                            <ThemedText
+                                style={[
+                                    styles.supportText,
+                                    { fontFamily: fontFamilyFor("bold", locale) },
+                                ]}
+                            >
+                                {t({ ar: "الدعم", en: "Support" })}
+                            </ThemedText>
+                        </PressableScale>
+                    </View>
                 </View>
             </SafeAreaView>
 
@@ -266,14 +303,14 @@ export default function BookingInfoScreen() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={[
                     styles.scroll,
-                    payable && styles.scrollWithPay,
+                    (payable || directionsUrl) && styles.scrollWithPay,
                 ]}
             >
                 {/* User-friendly reference, on top above the image. */}
                 <View
                     style={[
                         styles.refTop,
-                        { flexDirection: isRTL ? "row-reverse" : "row" },
+                        { flexDirection: "row" },
                     ]}
                 >
                     <ThemedText
@@ -305,7 +342,7 @@ export default function BookingInfoScreen() {
                     <View
                         style={[
                             styles.titleRow,
-                            { flexDirection: isRTL ? "row-reverse" : "row" },
+                            { flexDirection: "row" },
                         ]}
                     >
                         <ThemedText
@@ -376,12 +413,12 @@ export default function BookingInfoScreen() {
                 <View style={styles.card}>
                     <Row
                         label={t({ ar: "الوصول", en: "Check-in" })}
-                        value={`${formatDate(booking.start_date, locale)} · ${formatTime(booking.check_in_time)}`}
+                        value={formatDateTime(booking.start_date, booking.check_in_time, locale)}
                     />
                     <View style={styles.divider} />
                     <Row
                         label={t({ ar: "المغادرة", en: "Check-out" })}
-                        value={`${formatDate(booking.end_date, locale)} · ${formatTime(booking.check_out_time)}`}
+                        value={checkOutValue}
                     />
                     <View style={styles.divider} />
                     <Row
@@ -409,7 +446,7 @@ export default function BookingInfoScreen() {
                     <View
                         style={[
                             styles.row,
-                            { flexDirection: isRTL ? "row-reverse" : "row" },
+                            { flexDirection: "row" },
                         ]}
                     >
                         <ThemedText
@@ -451,13 +488,13 @@ export default function BookingInfoScreen() {
                                 <View
                                     style={[
                                         styles.reviewTopRow,
-                                        { flexDirection: isRTL ? "row-reverse" : "row" },
+                                        { flexDirection: "row" },
                                     ]}
                                 >
                                     <View
                                         style={[
                                             styles.starsRow,
-                                            { flexDirection: isRTL ? "row-reverse" : "row" },
+                                            { flexDirection: "row" },
                                         ]}
                                     >
                                         {[0, 1, 2, 3, 4].map((i) => (
@@ -547,7 +584,7 @@ export default function BookingInfoScreen() {
                                         haptic="select"
                                         style={[
                                             styles.deleteBtn,
-                                            { alignSelf: isRTL ? "flex-end" : "flex-start" },
+                                            { alignSelf: "flex-start" },
                                         ]}
                                     >
                                         <ThemedText
@@ -588,7 +625,7 @@ export default function BookingInfoScreen() {
                     <View
                         style={[
                             styles.paySummary,
-                            { flexDirection: isRTL ? "row-reverse" : "row" },
+                            { flexDirection: "row" },
                         ]}
                     >
                         <ThemedText
@@ -621,6 +658,31 @@ export default function BookingInfoScreen() {
                             ]}
                         >
                             {t({ ar: "ادفع الآن", en: "Pay now" })}
+                        </ThemedText>
+                    </PressableScale>
+                </SafeAreaView>
+            ) : null}
+
+            {!payable && directionsUrl ? (
+                <SafeAreaView edges={["bottom"]} style={styles.directionsBar}>
+                    <PressableScale
+                        onPress={openDirections}
+                        scaleTo={0.97}
+                        haptic="select"
+                        style={styles.directionsBtnFull}
+                    >
+                        <LocationPinIcon
+                            size={18}
+                            color="#FFFFFF"
+                            strokeWidth={1.9}
+                        />
+                        <ThemedText
+                            style={[
+                                styles.directionsBtnFullText,
+                                { fontFamily: fontFamilyFor("bold", locale) },
+                            ]}
+                        >
+                            {t({ ar: "الاتجاهات", en: "Open location" })}
                         </ThemedText>
                     </PressableScale>
                 </SafeAreaView>
@@ -670,6 +732,25 @@ const styles = StyleSheet.create({
         backgroundColor: "#000000",
     },
     supportText: { fontSize: 14, lineHeight: 18, color: "#FFFFFF" },
+    headerActions: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: Spacing[2],
+    },
+    shareBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        borderCurve: "continuous",
+        backgroundColor: "rgba(255, 255, 255, 0.9)",
+        alignItems: "center",
+        justifyContent: "center",
+        shadowColor: "#000000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 3,
+    },
 
     scroll: {
         padding: Spacing[5],
@@ -718,6 +799,24 @@ const styles = StyleSheet.create({
     titleRow: { alignItems: "center", gap: Spacing[2] },
     title: { flex: 1, fontSize: 22, lineHeight: 28, color: TEXT_PRIMARY },
     location: { fontSize: 14, lineHeight: 20, color: TEXT_SECONDARY },
+    directionsBar: {
+        backgroundColor: "#FFFFFF",
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: DIVIDER,
+        paddingHorizontal: Spacing[5],
+        paddingTop: Spacing[3],
+    },
+    directionsBtnFull: {
+        height: 54,
+        borderRadius: 16,
+        borderCurve: "continuous",
+        backgroundColor: "#000000",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: Spacing[2],
+    },
+    directionsBtnFullText: { fontSize: 16, lineHeight: 21, color: "#FFFFFF" },
     statusChip: {
         paddingHorizontal: Spacing[3],
         paddingVertical: 4,

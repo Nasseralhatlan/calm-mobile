@@ -47,7 +47,7 @@ function ListingCardRow({ listing }: { listing: ApiHostListing }) {
   const { locale } = useLocale();
   const t = useT();
   const isRTL = locale === 'ar';
-  const rowDir = isRTL ? ('row-reverse' as const) : ('row' as const);
+  const rowDir = 'row' as const;
   const align = isRTL ? ('right' as const) : ('left' as const);
   const wd = isRTL ? ('rtl' as const) : ('ltr' as const);
 

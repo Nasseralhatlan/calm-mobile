@@ -13,6 +13,9 @@ export interface PhotoViewerConfig {
   index: number;
   // The place these photos belong to — lets the viewer wire like/share.
   placeId: string;
+  // Localized place title, so the viewer's share message matches the other
+  // share buttons (which pass the title).
+  title?: { ar: string; en: string };
   likedFallback: boolean;
 }
 

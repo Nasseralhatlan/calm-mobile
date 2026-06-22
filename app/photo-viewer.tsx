@@ -3,14 +3,7 @@ import { Image } from "expo-image";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useRef, useState } from "react";
-import {
-  FlatList,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-} from "react-native";
+import { FlatList, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { HeartIcon } from "@/components/icons/heart-icon";
@@ -44,22 +37,21 @@ export default function PhotoViewerScreen() {
     const liked = isLiked(placeId, cfg?.likedFallback ?? false);
 
     const onShare = useCallback(() => {
-        sharePlace(placeId);
-    }, [placeId]);
+        sharePlace(placeId, cfg?.title ? t(cfg.title) : undefined);
+    }, [placeId, cfg, t]);
 
-    // Update the index (counter + backdrop) mid-swipe — at the half-way point —
-    // instead of waiting for the scroll to fully settle, so the backdrop feels
-    // responsive rather than lagging behind.
-    const onScroll = useCallback(
-        (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-            const i = Math.round(e.nativeEvent.contentOffset.x / width);
-            if (i !== index) {
+    // Track the visible page via viewability (direction-agnostic — works whether
+    // the horizontal list scrolls LTR or RTL, unlike contentOffset math).
+    const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
+    const onViewableItemsChanged = useRef(
+        ({ viewableItems }: { viewableItems: { index: number | null }[] }) => {
+            const i = viewableItems[0]?.index;
+            if (i != null) {
                 setIndex(i);
-                if (placeId) addPlaceInterest(placeId, "swipe", 6);
+                if (cfg?.placeId) addPlaceInterest(cfg.placeId, "swipe", 6);
             }
         },
-        [width, index, placeId],
-    );
+    ).current;
 
     if (items.length === 0) {
         return (
@@ -108,9 +100,8 @@ export default function PhotoViewerScreen() {
                     offset: width * i,
                     index: i,
                 })}
-                onScroll={onScroll}
-                onMomentumScrollEnd={onScroll}
-                scrollEventThrottle={16}
+                onViewableItemsChanged={onViewableItemsChanged}
+                viewabilityConfig={viewabilityConfig}
                 // Lock paging while an image is zoomed in so panning works.
                 scrollEnabled={!zoomed}
                 windowSize={3}

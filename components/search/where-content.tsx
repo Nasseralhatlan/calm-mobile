@@ -1,13 +1,13 @@
 import * as Haptics from 'expo-haptics';
 import { useMemo, useState } from 'react';
-import { I18nManager, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
 import { useHomeData } from '@/data/home';
 import type { ApiCity } from '@/lib/api';
-import { useLocale, useT } from '@/lib/i18n';
+import { LAYOUT_RTL, useLocale, useT } from '@/lib/i18n';
 
 interface WhereContentProps {
   value: ApiCity | null;
@@ -77,7 +77,7 @@ export function WhereContent({ value, onChange, onFocusChange, onConfirm }: Wher
               onPress={() => handlePickCity(city)}
               style={[
                 styles.row,
-                { flexDirection: I18nManager.isRTL ? 'row' : 'row-reverse' },
+                { flexDirection: 'row' },
               ]}>
               <View style={styles.iconBox}>
                 <ThemedText style={styles.iconEmoji}>{city.avatar}</ThemedText>

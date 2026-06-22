@@ -40,7 +40,8 @@ export function HeroCarousel({
 }: HeroCarouselProps) {
   const [page, setPage] = useState(0);
   const scrollX = useSharedValue(0);
-  const pageIndex = useDerivedValue(() => Math.round(scrollX.value / SCREEN_W));
+  // |x| so the page is correct whether the scroll origin is LTR or RTL.
+  const pageIndex = useDerivedValue(() => Math.round(Math.abs(scrollX.value) / SCREEN_W));
 
   const onSettle = (next: number) => {
     setPage((prev) => {
@@ -54,7 +55,7 @@ export function HeroCarousel({
       scrollX.value = e.contentOffset.x;
     },
     onMomentumEnd: (e) => {
-      const next = Math.round(e.contentOffset.x / SCREEN_W);
+      const next = Math.round(Math.abs(e.contentOffset.x) / SCREEN_W);
       runOnJS(onSettle)(next);
     },
   });
@@ -107,19 +108,13 @@ export function HeroCarousel({
               key={url}
               onPress={() => onPhotoPress?.(i)}
               style={styles.heroSlide}>
-              {/* Only the visible photo + its neighbours are mounted; the rest
-                  stay placeholders until swiped in (±1 keeps swipes instant). */}
-              {Math.abs(i - page) <= 1 ? (
-                <Image
-                  source={{ uri: url }}
-                  recyclingKey={url}
-                  style={styles.hero}
-                  contentFit="cover"
-                  transition={200}
-                />
-              ) : (
-                <View style={styles.hero} />
-              )}
+              <Image
+                source={{ uri: url }}
+                recyclingKey={url}
+                style={styles.hero}
+                contentFit="cover"
+                transition={200}
+              />
             </Pressable>
           ))}
         </AnimatedGHScrollView>

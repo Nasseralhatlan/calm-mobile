@@ -101,7 +101,7 @@ export function InterestCard() {
         scaleTo={0.985}
         haptic="select"
         onPress={open}
-        style={[styles.card, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        style={[styles.card, { flexDirection: 'row' }]}>
         <View style={styles.textCol}>
           <ThemedText
             numberOfLines={2}
@@ -115,7 +115,7 @@ export function InterestCard() {
             ]}>
             {title}
           </ThemedText>
-          <View style={[styles.subRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.subRow, { flexDirection: 'row' }]}>
             <ThemedText
               numberOfLines={1}
               style={[styles.subtitle, { fontFamily: fontFamilyFor('medium', locale) }]}>
@@ -150,7 +150,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing[4],
   },
   clearRow: {
-    alignItems: 'flex-start',
+    // Clear chip at the far (trailing) end — right in LTR, left in RTL.
+    alignItems: 'flex-end',
     marginBottom: Spacing[2],
   },
   clearBtn: {

@@ -61,7 +61,7 @@ export default function FiltersModal() {
   const t = useT();
   const { locale } = useLocale();
   const isRTL = locale === 'ar';
-  const rowDir = isRTL ? ('row-reverse' as const) : ('row' as const);
+  const rowDir = 'row' as const;
   const align = isRTL ? ('right' as const) : ('left' as const);
 
   const applied = getAppliedFilters();
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: { fontSize: 18, lineHeight: 24, color: TEXT_PRIMARY },
-  clearBtn: { position: 'absolute', right: Spacing[5], top: Spacing[3], height: 40, justifyContent: 'center' },
+  clearBtn: { position: 'absolute', insetInlineEnd: Spacing[5], top: Spacing[3], height: 40, justifyContent: 'center' },
   clearText: { fontSize: 14, lineHeight: 18, color: TEXT_PRIMARY, textDecorationLine: 'underline' },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing[8] },

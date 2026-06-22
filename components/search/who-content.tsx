@@ -34,7 +34,7 @@ export function WhoContent({ value, onChange }: WhoContentProps) {
       <View
         style={[
           styles.counterRow,
-          { flexDirection: isRTL ? 'row-reverse' : 'row' },
+          { flexDirection: 'row' },
         ]}>
         <View style={{ flex: 1 }}>
           <ThemedText

@@ -158,7 +158,7 @@ export default function HostBookings() {
       ) : (
         <View style={{ flex: 1, paddingTop: headerHeight }}>
           {/* View toggle */}
-          <View style={[styles.toggleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.toggleRow, { flexDirection: 'row' }]}>
             <Toggle value="calendar" label={t({ ar: 'التقويم', en: 'Calendar' })} />
             <Toggle value="list" label={t({ ar: 'قائمة', en: 'List' })} />
           </View>

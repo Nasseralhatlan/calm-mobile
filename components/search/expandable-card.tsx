@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { type ReactNode } from 'react';
-import { I18nManager, Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -9,7 +9,7 @@ import Animated, {
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
-import { useLocale } from '@/lib/i18n';
+import { LAYOUT_RTL, useLocale } from '@/lib/i18n';
 
 interface ExpandableCardProps {
   label: string;
@@ -49,7 +49,7 @@ export function ExpandableCard({
         onPress={handleToggle}
         style={[
           styles.headerRow,
-          { flexDirection: I18nManager.isRTL ? 'row' : 'row-reverse' },
+          { flexDirection: 'row' },
         ]}
         hitSlop={Spacing[1]}>
         <ThemedText

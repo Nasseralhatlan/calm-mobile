@@ -66,14 +66,14 @@ export function PendingPaymentCard() {
                 onPress={open}
                 style={[
                     styles.card,
-                    { flexDirection: isRTL ? "row-reverse" : "row" },
+                    { flexDirection: "row" },
                 ]}
             >
                 <View style={styles.textCol}>
                     <View
                         style={[
                             styles.badgeRow,
-                            { flexDirection: isRTL ? "row-reverse" : "row" },
+                            { flexDirection: "row" },
                         ]}
                     >
                         <View style={styles.badge}>
@@ -111,7 +111,7 @@ export function PendingPaymentCard() {
                     <View
                         style={[
                             styles.metaRow,
-                            { flexDirection: isRTL ? "row-reverse" : "row" },
+                            { flexDirection: "row" },
                         ]}
                     >
                         <ThemedText

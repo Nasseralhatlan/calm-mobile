@@ -3,8 +3,10 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { I18nManager } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import RNRestart from "react-native-restart";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -14,13 +16,51 @@ import { AppModeProvider } from "@/data/app-mode";
 import { AuthStateProvider } from "@/data/auth-state";
 import { HomeDataProvider } from "@/data/home";
 import { LikesProvider } from "@/data/likes";
+import { getStoredLocale } from "@/data/locale-setting";
 import { LoginCountryProvider } from "@/data/login-country";
 import { SelectedCityProvider } from "@/data/selected-city";
 import { useBootstrap } from "@/hooks/use-bootstrap";
-import { LocaleProvider } from "@/lib/i18n";
+import { LOCALE_SWITCHING_ENABLED, LocaleProvider } from "@/lib/i18n";
 import { SplashStatusProvider } from "@/lib/splash-status";
 
 SplashScreen.preventAutoHideAsync();
+
+// Reconcile the native canvas direction with the user's stored locale BEFORE the
+// app renders. If they disagree (first launch defaults to 'ar'/RTL, or the user
+// just toggled), force the native direction and restart once so RN lays out in
+// the right direction from the first frame. Guarded against a restart loop by
+// comparing against `I18nManager.isRTL`.
+function useDirectionReady(): boolean {
+    const [ready, setReady] = useState(false);
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            // Arabic/RTL disabled for now → force LTR regardless of device or the
+            // stored setting. When re-enabled, reconcile to the stored locale.
+            const desiredRTL = LOCALE_SWITCHING_ENABLED
+                ? (await getStoredLocale()) === "ar"
+                : false;
+            if (I18nManager.isRTL !== desiredRTL) {
+                // allowRTL(false) when forcing LTR fully disables RTL even on
+                // Arabic devices; allowRTL(true) only matters when re-enabled.
+                I18nManager.allowRTL(desiredRTL);
+                I18nManager.forceRTL(desiredRTL);
+                try {
+                    RNRestart.restart();
+                    return; // app reloads; nothing below runs
+                } catch {
+                    // Restart unavailable (e.g. Expo Go) — proceed; the forced
+                    // direction takes effect on the next manual reload.
+                }
+            }
+            if (!cancelled) setReady(true);
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+    return ready;
+}
 
 export const unstable_settings = {
     anchor: "(tabs)",
@@ -41,7 +81,8 @@ export default function RootLayout() {
     });
 
     const { isReady: bootstrapReady, data: homeData, refresh: refreshHome } = useBootstrap();
-    const appReady = fontsLoaded && bootstrapReady;
+    const directionReady = useDirectionReady();
+    const appReady = fontsLoaded && bootstrapReady && directionReady;
     const [splashGone, setSplashGone] = useState(false);
 
     return (

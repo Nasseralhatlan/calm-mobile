@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useEffect } from 'react';
-import { I18nManager, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
@@ -11,7 +11,7 @@ import Animated, {
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
-import { useLocale, useT } from '@/lib/i18n';
+import { LAYOUT_RTL, useLocale, useT } from '@/lib/i18n';
 
 export interface MultiSelectItem {
   id: string;
@@ -86,7 +86,7 @@ export function MultiSelectContent({
   const { locale } = useLocale();
   const t = useT();
   const isRTL = locale === 'ar';
-  const rowDir = I18nManager.isRTL ? 'row' : 'row-reverse';
+  const rowDir = 'row' as const;
   // Nothing picked = no filter on this box, i.e. "show all".
   const noneSelected = selectedIds.length === 0;
 

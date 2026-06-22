@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 3,
     position: 'absolute',
-    left: Spacing[5],
+    insetInlineStart: Spacing[5],
     top: Spacing[3],
     zIndex: 2,
   },

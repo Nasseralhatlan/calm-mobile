@@ -251,7 +251,7 @@ export default function EditProfileScreen() {
           </Field>
 
           <Field label={t({ ar: 'الجنس', en: 'Gender' })} locale={locale} align={align}>
-            <View style={[styles.chipsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <View style={[styles.chipsRow, { flexDirection: 'row' }]}>
               <GenderChip
                 value="male"
                 label={t({ ar: 'ذكر', en: 'Male' })}

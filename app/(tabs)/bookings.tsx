@@ -370,7 +370,7 @@ function SectionSeparator({
     isRTL: boolean;
 }) {
     return (
-        <View style={[styles.sepRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+        <View style={[styles.sepRow, { flexDirection: "row" }]}>
             <ThemedText style={[styles.sepLabel, { fontFamily: fontFamilyFor("bold", locale) }]}>
                 {label}
             </ThemedText>
@@ -390,9 +390,9 @@ function BookingSkeleton({ isRTL }: { isRTL: boolean }) {
     }, [opacity]);
     const anim = useAnimatedStyle(() => ({ opacity: opacity.value }));
     return (
-        <View style={[styles.skelRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+        <View style={[styles.skelRow, { flexDirection: "row" }]}>
             <Animated.View style={[styles.thumb, styles.skelBlock, anim]} />
-            <View style={[styles.body, { alignItems: isRTL ? "flex-end" : "flex-start" }]}>
+            <View style={[styles.body, { alignItems: "flex-start" }]}>
                 <Animated.View style={[styles.skelLine, { width: "70%" }, anim]} />
                 <Animated.View style={[styles.skelLine, { width: "45%" }, anim]} />
                 <Animated.View style={[styles.skelLine, { width: "55%" }, anim]} />
@@ -438,7 +438,7 @@ function BookingRow({
             scaleTo={0.985}
             haptic="forward"
             onPress={onPress}
-            style={[styles.card, { flexDirection: isRTL ? "row-reverse" : "row" }]}
+            style={[styles.card, { flexDirection: "row" }]}
         >
             <Image
                 source={place?.cover_photo_url ? { uri: place.cover_photo_url } : undefined}
@@ -447,7 +447,7 @@ function BookingRow({
                 transition={250}
             />
             <View style={styles.body}>
-                <View style={[styles.topRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+                <View style={[styles.topRow, { flexDirection: "row" }]}>
                     <ThemedText
                         numberOfLines={1}
                         style={[
@@ -489,7 +489,7 @@ function BookingRow({
                     </ThemedText>
                 ) : null}
 
-                <View style={[styles.bottomRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+                <View style={[styles.bottomRow, { flexDirection: "row" }]}>
                     <ThemedText
                         numberOfLines={1}
                         style={[

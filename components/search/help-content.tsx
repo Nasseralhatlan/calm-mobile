@@ -98,7 +98,7 @@ export function HelpContent({ answers, onChange, onSkip, onComplete }: HelpConte
     onComplete();
   };
 
-  const gridDir = isRTL ? 'row-reverse' : 'row';
+  const gridDir = 'row' as const;
 
   return (
     <View style={styles.wrap}>
@@ -197,7 +197,7 @@ function Question({
   const { locale } = useLocale();
   return (
     <View style={styles.question}>
-      <View style={[styles.qHead, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+      <View style={[styles.qHead, { flexDirection: 'row' }]}>
         <View style={styles.qBadge}>
           <ThemedText
             style={[styles.qBadgeText, { fontFamily: fontFamilyFor('bold', locale) }]}>

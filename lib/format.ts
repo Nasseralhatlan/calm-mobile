@@ -61,6 +61,38 @@ export function formatMoneyEn(halalas: number, decimals: number = 0): string {
   return `SR ${num}`;
 }
 
+/** Add whole days to a plain YYYY-MM-DD date, returning the same format. Used
+ * for checkout_next_day, where checkout lands the day after the booking's end. */
+export function addDaysIso(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** A single booking date like "Sat, 20 Jun". Forces the Gregorian calendar
+ * (ar-SA defaults to Hijri). */
+export function formatBookingDate(iso: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(`${iso}T00:00:00`));
+}
+
+/** "{date} · {time}" for a booking endpoint, dropping the time if absent. */
+export function formatDateTime(
+  iso: string,
+  time24: string | null | undefined,
+  locale: Locale,
+): string {
+  return [formatBookingDate(iso, locale), formatTime12(time24)]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 export function formatDateRange(checkIn: string, checkOut: string, locale: Locale): string {
   const start = new Date(checkIn);
   const end = new Date(checkOut);

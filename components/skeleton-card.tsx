@@ -31,7 +31,7 @@ export function SkeletonCard() {
   return (
     <View style={styles.card}>
       <Animated.View style={[styles.image, animStyle]} />
-      <View style={[styles.meta, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+      <View style={[styles.meta, { alignItems: 'flex-start' }]}>
         <Animated.View style={[styles.line, styles.lineLarge, animStyle]} />
         <Animated.View style={[styles.line, styles.lineMed, animStyle]} />
         <Animated.View style={[styles.line, styles.lineSmall, animStyle]} />

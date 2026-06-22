@@ -6,7 +6,6 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     Dimensions,
-    I18nManager,
     ScrollView,
     StyleSheet,
     View,
@@ -129,9 +128,6 @@ export default function ListingPhotosScreen() {
     const t = useT();
     const { locale } = useLocale();
     const isRTL = locale === "ar";
-    // Visual RTL for the chip strip when the device isn't natively RTL (matches
-    // the home carousels). When it is, the ScrollView already lays out RTL.
-    const mirror = isRTL && !I18nManager.isRTL;
     const { isLiked, toggle } = useLikes();
 
     const { listing, apiDetail } = useListingForId(id);
@@ -317,6 +313,7 @@ export default function ListingPhotosScreen() {
             items: allPhotos,
             index,
             placeId: listing.id,
+            title: listing.title,
             likedFallback: liked,
         });
         router.push("/photo-viewer");
@@ -335,13 +332,10 @@ export default function ListingPhotosScreen() {
         <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={mirror ? styles.mirrorX : undefined}
             contentContainerStyle={styles.chipsRow}
         >
             {groups.map((g) => (
-                // Mirror on a plain wrapper, NOT the PressableScale (its own
-                // scale transform would override scaleX and re-flip the text).
-                <View key={g.key} style={mirror ? styles.mirrorX : undefined}>
+                <View key={g.key}>
                     <PressableScale
                         onPress={() => scrollToSection(g.key)}
                         scaleTo={0.95}
@@ -588,7 +582,6 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     navWrap: { overflow: "hidden" },
-    mirrorX: { transform: [{ scaleX: -1 }] },
 
     chipsRow: {
         paddingHorizontal: SECTION_PAD,

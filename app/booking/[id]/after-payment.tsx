@@ -12,7 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors, Radius, Spacing, fontFamilyFor } from '@/constants/theme';
 import { useListingForId } from '@/hooks/use-listing-for-id';
 import { getBookingPaymentStatus, type ApiBooking } from '@/lib/api';
-import { formatSar } from '@/lib/format';
+import { addDaysIso, formatDateTime, formatSar } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 
 const TEXT_PRIMARY = '#000000';
@@ -36,18 +36,6 @@ const POLL_DELAY = 2000;
 
 type Phase = 'checking' | 'confirmed' | 'pending';
 
-function formatRange(startISO: string, endISO: string, locale: 'ar' | 'en'): string {
-  const a = new Date(`${startISO}T00:00:00`);
-  const b = new Date(`${endISO}T00:00:00`);
-  const fmt = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-SA' : 'en-US', {
-    day: 'numeric',
-    month: 'short',
-  });
-  const yr = a.getFullYear();
-  if (startISO === endISO) return `${fmt.format(a)}, ${yr}`;
-  return `${fmt.format(a)} – ${fmt.format(b)}, ${yr}`;
-}
-
 function Row({
   isRTL,
   locale,
@@ -62,7 +50,7 @@ function Row({
   strong?: boolean;
 }) {
   return (
-    <View style={[styles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+    <View style={[styles.row, { flexDirection: 'row' }]}>
       <ThemedText
         style={[styles.rowLabel, { fontFamily: fontFamilyFor('regular', locale) }]}>
         {label}
@@ -161,7 +149,24 @@ export default function AfterPaymentScreen() {
   const dispGuests = booking?.guests ?? (guests ? Number(guests) : listing?.capacity.guests) ?? null;
   const dispTotal = booking?.pricing.total ?? (total ? Number(total) : null);
 
-  const dateText = dispStart && dispEnd ? formatRange(dispStart, dispEnd, locale) : '—';
+  // Check-in / check-out with exact times. Times come from the live booking
+  // when available, else the place detail; checkout_next_day (place detail)
+  // shifts the displayed checkout date to the day after the last booked day.
+  const checkInTime = booking?.check_in_time ?? listing?.checkInTime;
+  const checkOutTime = booking?.check_out_time ?? listing?.checkOutTime;
+  const nextDay = booking?.checkout_next_day ?? listing?.checkoutNextDay ?? false;
+  // Prefer the backend's resolved checkout_at (date part); fall back to the
+  // forwarded end date (+1 when overnight) until the poll lands.
+  const checkOutDateDisp = booking?.checkout_at
+    ? booking.checkout_at.slice(0, 10)
+    : dispEnd && nextDay
+      ? addDaysIso(dispEnd, 1)
+      : dispEnd;
+  const checkInText = dispStart ? formatDateTime(dispStart, checkInTime, locale) : '—';
+  const checkOutText = checkOutDateDisp
+    ? formatDateTime(checkOutDateDisp, checkOutTime, locale) +
+      (nextDay ? ` (${t({ ar: 'اليوم التالي', en: 'next day' })})` : '')
+    : '—';
   const guestsText =
     dispGuests != null
       ? `${dispGuests} ${t({ ar: dispGuests === 1 ? 'ضيف' : 'ضيوف', en: dispGuests === 1 ? 'guest' : 'guests' })}`
@@ -228,7 +233,7 @@ export default function AfterPaymentScreen() {
           {/* Order summary card — same shape as the checkout summary. */}
           {listing ? (
             <View style={styles.card}>
-              <View style={[styles.listingHead, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View style={[styles.listingHead, { flexDirection: 'row' }]}>
                 <Image
                   source={{ uri: listing.photos[0] }}
                   style={styles.listingImage}
@@ -244,8 +249,8 @@ export default function AfterPaymentScreen() {
                     ]}>
                     {t(listing.title)}
                   </ThemedText>
-                  <View style={[styles.listingMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <View style={[styles.metaPart, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  <View style={[styles.listingMeta, { flexDirection: 'row' }]}>
+                    <View style={[styles.metaPart, { flexDirection: 'row' }]}>
                       <StarIcon size={11} color={TEXT_PRIMARY} />
                       <ThemedText style={[styles.metaText, { fontFamily: fontFamilyFor('regular', locale) }]}>
                         {' '}
@@ -257,7 +262,9 @@ export default function AfterPaymentScreen() {
               </View>
 
               <View style={styles.cardDivider} />
-              <Row isRTL={isRTL} locale={locale} label={t({ ar: 'التواريخ', en: 'Dates' })} value={dateText} />
+              <Row isRTL={isRTL} locale={locale} label={t({ ar: 'الوصول', en: 'Check-in' })} value={checkInText} />
+              <View style={styles.cardDivider} />
+              <Row isRTL={isRTL} locale={locale} label={t({ ar: 'المغادرة', en: 'Check-out' })} value={checkOutText} />
               <View style={styles.cardDivider} />
               <Row isRTL={isRTL} locale={locale} label={t({ ar: 'الضيوف', en: 'Guests' })} value={guestsText} />
               <View style={styles.cardDivider} />

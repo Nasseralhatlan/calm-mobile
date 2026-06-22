@@ -178,7 +178,7 @@ export default function HostHome() {
             </View>
 
             {/* Bookings, filtered by Today / Upcoming */}
-            <View style={[styles.chipsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <View style={[styles.chipsRow, { flexDirection: 'row' }]}>
               <Chip value="today" label={t({ ar: 'اليوم', en: 'Today' })} />
               <Chip value="upcoming" label={t({ ar: 'القادمة', en: 'Upcoming' })} />
             </View>

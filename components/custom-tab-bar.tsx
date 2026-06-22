@@ -16,6 +16,7 @@ import { useLocale } from '@/lib/i18n';
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { locale } = useLocale();
+  const isRTL = locale === 'ar';
   const labelFont = fontFamilyFor('medium', locale);
 
   return (
@@ -65,8 +66,10 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               color={color}
               labelFont={labelFont}
               hitSlop={{
-                left: isFirst ? edgeSlop : 0,
-                right: isLast ? edgeSlop : 0,
+                // The row reverses natively under RTL, so the first tab sits on
+                // the physical right — give edge slop to the correct side.
+                left: (isRTL ? isLast : isFirst) ? edgeSlop : 0,
+                right: (isRTL ? isFirst : isLast) ? edgeSlop : 0,
                 top: 0,
                 bottom: 0,
               }}

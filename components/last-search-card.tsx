@@ -159,7 +159,7 @@ export function LastSearchCard() {
 
     return (
         <Animated.View style={[styles.wrap, animStyle]}>
-            {/* Clear: a small contained button, outside the card at the top-left. */}
+            {/* Clear: a small contained button above the card at the trailing end. */}
             <View style={styles.clearRow}>
                 <Pressable onPress={clear} hitSlop={8} style={styles.clearBtn}>
                     <ThemedText
@@ -179,7 +179,7 @@ export function LastSearchCard() {
                 onPress={open}
                 style={[
                     styles.card,
-                    { flexDirection: isRTL ? "row-reverse" : "row" },
+                    { flexDirection: "row" },
                 ]}
             >
                 <View style={styles.textCol}>
@@ -202,7 +202,7 @@ export function LastSearchCard() {
                     <View
                         style={[
                             styles.subRow,
-                            { flexDirection: isRTL ? "row-reverse" : "row" },
+                            { flexDirection: "row" },
                         ]}
                     >
                         <ThemedText
@@ -241,7 +241,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing[5],
     },
     clearRow: {
-        alignItems: "flex-start",
+        // Clear chip at the far (trailing) end — right in LTR, left in RTL.
+        alignItems: "flex-end",
         marginBottom: Spacing[2],
     },
     clearBtn: {

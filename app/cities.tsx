@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { FlatList, I18nManager, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnimatedField } from '@/components/animated-field';
@@ -12,7 +12,7 @@ import { useHomeData } from '@/data/home';
 import { useSelectedCity } from '@/data/selected-city';
 import type { ApiCity } from '@/lib/api';
 import { fireHaptic } from '@/lib/haptics';
-import { useLocale, useT } from '@/lib/i18n';
+import { LAYOUT_RTL, useLocale, useT } from '@/lib/i18n';
 
 export default function CitiesModal() {
   const router = useRouter();
@@ -78,8 +78,8 @@ export default function CitiesModal() {
               styles.searchInput,
               {
                 fontFamily: fontFamilyFor('bold', locale),
-                textAlign: 'right',
-                writingDirection: 'rtl',
+                textAlign: LAYOUT_RTL ? 'right' : 'left',
+                writingDirection: LAYOUT_RTL ? 'rtl' : 'ltr',
               },
             ]}
           />
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   },
   columnWrapper: {
     gap: Spacing[3],
-    flexDirection: I18nManager.isRTL ? 'row' : 'row-reverse',
+    flexDirection: 'row',
   },
   card: {
     flex: 1,
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     color: Colors.light.text,
     textAlign: 'center',
-    writingDirection: 'rtl',
+    writingDirection: LAYOUT_RTL ? 'rtl' : 'ltr',
   },
 
   empty: {

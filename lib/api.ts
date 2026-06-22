@@ -579,6 +579,12 @@ export interface ApiBooking {
     end_date: string;
     check_in_time: string;
     check_out_time: string;
+    // true = overnight (checkout the morning AFTER end_date); false = same-day.
+    checkout_next_day?: boolean;
+    // Fully-resolved checkout instant (already +1 day when checkout_next_day).
+    // Use the DATE part + check_out_time for display (see the timezone note in
+    // docs); don't recompute from end_date.
+    checkout_at?: string | null;
     guests: number | null;
     currency: string;
     pricing: ApiBookingPricing;
@@ -613,6 +619,9 @@ export interface ApiBookingPlaceSummary {
     type: { name_en: string; name_ar: string; icon: string };
     city: { name_en: string; name_ar: string };
     city_area: { name_en: string; name_ar: string } | null;
+    // Map link (e.g. Google Maps) to the venue. Present ONLY when the booking is
+    // confirmed or completed; null otherwise. Never on public place endpoints.
+    location_url?: string | null;
 }
 
 // --- Reviews ---

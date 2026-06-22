@@ -81,13 +81,13 @@ function ListingCardBase({ listing, startDate, endDate }: ListingCardProps) {
         />
 
         <View style={styles.meta}>
-          <View style={[styles.titleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.titleRow, { flexDirection: 'row' }]}>
             <ThemedText
               numberOfLines={1}
               style={[styles.title, textBase, { fontFamily: fontFamilyFor('bold', locale) }]}>
               {t(listing.title)}
             </ThemedText>
-            <View style={[styles.rating, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <View style={[styles.rating, { flexDirection: 'row' }]}>
               <IconSymbol name="star.fill" size={13} color={Colors.light.text} />
               <ThemedText
                 style={[styles.ratingText, { fontFamily: fontFamilyFor('bold', locale) }]}>
@@ -142,21 +142,17 @@ function PhotoCarousel({
   isSuperhost: boolean;
 }) {
   const [width, setWidth] = useState(DEFAULT_CARD_WIDTH);
-  // Only mount the visible photo + its neighbours; the rest stay lightweight
-  // placeholders until swiped into view (cuts simultaneous image decodes in
-  // long lists). ±1 keeps the next swipe instant.
-  const [activeIndex, setActiveIndex] = useState(0);
   const scrollX = useSharedValue(0);
   const scrollRef = useRef<GHScrollView>(null);
+  // |x| so the active page is correct whether the scroll origin is LTR or RTL.
   const pageIndex = useDerivedValue(() =>
-    width > 0 ? Math.round(scrollX.value / width) : 0,
+    width > 0 ? Math.round(Math.abs(scrollX.value) / width) : 0,
   );
 
   // FlashList recycles this cell for different listings — when the photos change
-  // (a recycle), snap back to the first photo so the dots and the lazy-load
-  // window don't inherit the previous card's scroll position.
+  // (a recycle), snap back to the first photo so the dots don't inherit the
+  // previous card's scroll position.
   useEffect(() => {
-    setActiveIndex(0);
     scrollX.value = 0;
     scrollRef.current?.scrollTo({ x: 0, animated: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -182,26 +178,20 @@ function PhotoCarousel({
         showsHorizontalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        onMomentumScrollEnd={(e) => {
-          const i = width > 0 ? Math.round(e.nativeEvent.contentOffset.x / width) : 0;
-          if (i !== activeIndex) setActiveIndex(i);
-        }}
         bounces
         alwaysBounceHorizontal>
-        {photos.map((url, i) =>
-          Math.abs(i - activeIndex) <= 1 ? (
-            <Image
-              key={url}
-              source={{ uri: url }}
-              recyclingKey={url}
-              style={[styles.image, { width }]}
-              contentFit="cover"
-              transition={200}
-            />
-          ) : (
-            <View key={url} style={[styles.image, styles.imagePlaceholder, { width }]} />
-          ),
-        )}
+        {/* Render all photos — a listing has only a handful, and gating mounts on
+            a scroll-derived index breaks under RTL (the offset reverses). */}
+        {photos.map((url) => (
+          <Image
+            key={url}
+            source={{ uri: url }}
+            recyclingKey={url}
+            style={[styles.image, { width }]}
+            contentFit="cover"
+            transition={200}
+          />
+        ))}
       </AnimatedGHScrollView>
 
       <View style={styles.heart}>

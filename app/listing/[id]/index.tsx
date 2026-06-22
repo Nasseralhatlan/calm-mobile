@@ -382,7 +382,7 @@ export default function ListingDetailScreen() {
         }
     };
 
-    const rowDir = isRTL ? "row-reverse" : "row";
+    const rowDir = "row" as const;
 
     return (
         <View style={styles.container}>
@@ -533,11 +533,7 @@ export default function ListingDetailScreen() {
                         <View
                             style={[
                                 styles.highlightsList,
-                                {
-                                    flexDirection: isRTL
-                                        ? "row-reverse"
-                                        : "row",
-                                },
+                                { flexDirection: "row" },
                             ]}
                         >
                             {highlights.map((h) => (
@@ -612,16 +608,10 @@ export default function ListingDetailScreen() {
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
-                            // True RTL scroll: mirror the whole scroll view, then mirror
-                            // each item back so its content reads naturally.
-                            style={isRTL ? styles.mirrorX : undefined}
                             contentContainerStyle={styles.spacesRow}
                         >
                             {spaces.map((s) => (
-                                <View
-                                    key={s.key}
-                                    style={isRTL ? styles.mirrorX : undefined}
-                                >
+                                <View key={s.key}>
                                     <PressableScale
                                         haptic="select"
                                         onPress={() => goToPhotos(s.key)}
@@ -825,14 +815,7 @@ export default function ListingDetailScreen() {
                             })}
                         </ThemedText>
                         <View
-                            style={[
-                                styles.checkCard,
-                                {
-                                    flexDirection: isRTL
-                                        ? "row-reverse"
-                                        : "row",
-                                },
-                            ]}
+                            style={[styles.checkCard, { flexDirection: "row" }]}
                         >
                             {[
                                 {
@@ -979,21 +962,12 @@ export default function ListingDetailScreen() {
                         snapToAlignment="start"
                         decelerationRate="fast"
                         disableIntervalMomentum
-                        // RTL: mirror the scroller (and each child back) so it
-                        // starts at the first review instead of the last.
-                        style={isRTL ? styles.mirrorX : undefined}
                         contentContainerStyle={styles.reviewsRow}
                     >
                         {reviews.slice(0, 6).map((r, idx) => (
-                            <View
-                                key={r.id}
-                                style={[
-                                    isRTL ? styles.mirrorX : undefined,
-                                    { flexDirection: "row" },
-                                ]}
-                            >
-                                {/* Border on the right for every comment except
-                                    the first → a separator only between them. */}
+                            <View key={r.id} style={{ flexDirection: "row" }}>
+                                {/* Border on the leading edge for every comment
+                                    except the first → a separator only between them. */}
                                 <View
                                     style={[
                                         styles.reviewItem,
@@ -1441,9 +1415,6 @@ const styles = StyleSheet.create({
         paddingStart: 0,
         paddingEnd: Spacing[5],
     },
-    mirrorX: {
-        transform: [{ scaleX: -1 }],
-    },
     highlightsSection: {
         paddingHorizontal: Spacing[5],
         paddingVertical: Spacing[2],
@@ -1648,8 +1619,11 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing[1],
     },
     reviewItemSep: {
-        borderRightWidth: 1,
-        borderRightColor: "#ededed",
+        // Separator on the leading edge of every comment except the first, so
+        // the line always falls between two cards. Logical `start` flips with
+        // native RTL (left edge in LTR, right edge in RTL).
+        borderStartWidth: 1,
+        borderStartColor: "#ededed",
         paddingHorizontal: Spacing[10],
     },
     reviewDate: {

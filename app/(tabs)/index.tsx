@@ -4,12 +4,11 @@ import { useRouter } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
     FlatList,
-    I18nManager,
     Platform,
     RefreshControl,
     ScrollView,
     StyleSheet,
-    View
+    View,
 } from "react-native";
 import {
     SafeAreaView,
@@ -37,13 +36,13 @@ import { invalidatePlaceCaches } from "@/data/caches";
 import { useHomeData, useHomeRefresh } from "@/data/home";
 import { setPlaceList } from "@/data/place-list";
 import type { ApiPlace, ApiPlaceType } from "@/lib/api";
-import { useLocale, useT } from "@/lib/i18n";
+import { LAYOUT_RTL, useLocale, useT } from "@/lib/i18n";
 
 export default function ExploreScreen() {
     const palette = Colors.light;
     const t = useT();
     const { locale } = useLocale();
-    const isRTL = locale === "ar";
+    const isRTL = LAYOUT_RTL;
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const headerHeight = insets.top + 132;
@@ -300,9 +299,7 @@ function CategoriesGrid({
     const tiles = placeTypes.slice(0, 3);
 
     return (
-        <View
-            style={[styles.grid, isRTL && !I18nManager.isRTL && styles.gridRTL]}
-        >
+        <View style={styles.grid}>
             {tiles.map((type, i) => (
                 <View key={type.id} style={styles.gridCell}>
                     <EntranceItem delay={140 + i * 50}>
@@ -344,14 +341,6 @@ function PlacesSection({
     const { locale } = useLocale();
     const router = useRouter();
     const isRTL = locale === "ar";
-    // The locale is always Arabic, so the row must read right-to-left. When the
-    // device is natively RTL (forceRTL), the FlatList already lays out — and
-    // rests — with the first card on the right; do nothing. When it isn't, flip
-    // the whole row with a scaleX mirror and flip each card back. Either way the
-    // list rests at its natural offset, so NO scrollToIndex/scrollToEnd hack is
-    // needed — that hack (viewPosition:0) was what pinned the first card to the
-    // left edge.
-    const mirror = !I18nManager.isRTL;
 
     // The trailing "view all" card animates when it actually scrolls on screen.
     const [viewAllVisible, setViewAllVisible] = useState(false);
@@ -388,7 +377,9 @@ function PlacesSection({
                 <View
                     style={[
                         styles.sectionHeader,
-                        { flexDirection: isRTL ? "row" : "row-reverse" },
+                        // DOM order is [moreChip, title]; row-reverse renders the
+                        // title at the reading start in both directions (native).
+                        { flexDirection: "row-reverse" },
                     ]}
                 >
                     <PressableScale
@@ -441,24 +432,21 @@ function PlacesSection({
                 <FlatList
                     data={data}
                     horizontal
-                    style={mirror ? styles.mirrorRow : undefined}
                     keyExtractor={(c) =>
                         c.kind === "place" ? c.place.id : "view-all"
                     }
                     renderItem={({ item, index }) => (
-                        <View style={mirror ? styles.mirrorRow : undefined}>
-                            <EntranceItem delay={headerDelay + 40 + index * 60}>
-                                {item.kind === "place" ? (
-                                    <PlaceCardCompact place={item.place} />
-                                ) : (
-                                    <ViewAllCard
-                                        photos={item.thumbs}
-                                        active={viewAllVisible}
-                                        onPress={openAll}
-                                    />
-                                )}
-                            </EntranceItem>
-                        </View>
+                        <EntranceItem delay={headerDelay + 40 + index * 60}>
+                            {item.kind === "place" ? (
+                                <PlaceCardCompact place={item.place} />
+                            ) : (
+                                <ViewAllCard
+                                    photos={item.thumbs}
+                                    active={viewAllVisible}
+                                    onPress={openAll}
+                                />
+                            )}
+                        </EntranceItem>
                     )}
                     showsHorizontalScrollIndicator={false}
                     onViewableItemsChanged={onViewable}
@@ -553,9 +541,6 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         gap: TILE_GAP,
     },
-    gridRTL: {
-        flexDirection: "row-reverse",
-    },
     gridCell: {
         flex: 1,
         minWidth: 0,
@@ -609,11 +594,6 @@ const styles = StyleSheet.create({
     carousel: {
         paddingHorizontal: Spacing[5],
         gap: Spacing[3],
-    },
-    // Visual RTL for the row when the device isn't natively RTL: flip the list,
-    // then flip each card back so its contents read correctly.
-    mirrorRow: {
-        transform: [{ scaleX: -1 }],
     },
     emptyState: {
         paddingHorizontal: Spacing[5],

@@ -16,7 +16,7 @@ import { clearInterest } from '@/data/place-interest';
 import { fetchQuote } from '@/data/quote';
 import { useListingForId } from '@/hooks/use-listing-for-id';
 import { ApiError, createBooking, type ApiQuote } from '@/lib/api';
-import { formatSar } from '@/lib/format';
+import { addDaysIso, formatDateTime, formatSar } from '@/lib/format';
 import { useLocale, useT } from '@/lib/i18n';
 
 const TEXT_PRIMARY = '#000000';
@@ -24,18 +24,6 @@ const TEXT_SECONDARY = '#6B7280';
 const TEXT_MUTED = '#9CA3AF';
 const DIVIDER = '#F4F4F4';
 const SURFACE = '#F4F4F4';
-
-function formatRangeYmd(checkIn: string, checkOut: string): string {
-  const a = new Date(`${checkIn}T00:00:00`);
-  const b = new Date(`${checkOut}T00:00:00`);
-  const fmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
-  const yr = a.getFullYear();
-  if (checkIn === checkOut) return `${fmt.format(a)}, ${yr}`;
-  if (a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()) {
-    return `${fmt.format(a)} – ${b.getDate()}, ${yr}`;
-  }
-  return `${fmt.format(a)} – ${fmt.format(b)}, ${yr}`;
-}
 
 export default function BookingSummaryScreen() {
   const { id, checkIn, checkOut } = useLocalSearchParams<{
@@ -81,10 +69,24 @@ export default function BookingSummaryScreen() {
     );
   }
 
-  const dateLabel =
+  // Exact check-in / check-out, each as date · time. checkout_next_day means
+  // the checkout date is the day after the last booked day.
+  const checkOutDateDisp =
+    checkOut && listing.checkoutNextDay ? addDaysIso(checkOut, 1) : checkOut;
+  const checkInValue =
     checkIn && checkOut
-      ? formatRangeYmd(checkIn, checkOut)
+      ? formatDateTime(checkIn, listing.checkInTime, locale)
       : t({ ar: 'لم يتم اختيار تواريخ', en: 'No dates selected' });
+  const checkOutValue = checkOutDateDisp
+    ? formatDateTime(checkOutDateDisp, listing.checkOutTime, locale) +
+      (listing.checkoutNextDay ? ` (${t({ ar: 'اليوم التالي', en: 'next day' })})` : '')
+    : '';
+
+  const changeDates = () =>
+    router.replace({
+      pathname: '/booking/[id]/dates',
+      params: { id, startDate: checkIn, endDate: checkOut },
+    });
 
   const totalText = quote ? formatSar(quote.pricing.total) : '—';
 
@@ -225,7 +227,7 @@ export default function BookingSummaryScreen() {
             <View
               style={[
                 styles.listingHead,
-                { flexDirection: isRTL ? 'row-reverse' : 'row' },
+                { flexDirection: 'row' },
               ]}>
               <Image
                 source={{ uri: listing.photos[0] }}
@@ -249,12 +251,12 @@ export default function BookingSummaryScreen() {
                 <View
                   style={[
                     styles.listingMeta,
-                    { flexDirection: isRTL ? 'row-reverse' : 'row' },
+                    { flexDirection: 'row' },
                   ]}>
                   <View
                     style={[
                       styles.metaPart,
-                      { flexDirection: isRTL ? 'row-reverse' : 'row' },
+                      { flexDirection: 'row' },
                     ]}>
                     <StarIcon size={11} color={TEXT_PRIMARY} />
                     <ThemedText
@@ -280,18 +282,31 @@ export default function BookingSummaryScreen() {
 
             <View style={styles.cardDivider} />
 
-            <Row
-              isRTL={isRTL}
-              label={t({ ar: 'التواريخ', en: 'Dates' })}
-              value={dateLabel}
-              action={t({ ar: 'تغيير', en: 'Change' })}
-              onAction={() =>
-                router.replace({
-                  pathname: '/booking/[id]/dates',
-                  params: { id, startDate: checkIn, endDate: checkOut },
-                })
-              }
-            />
+            {checkIn && checkOut ? (
+              <>
+                <Row
+                  isRTL={isRTL}
+                  label={t({ ar: 'الوصول', en: 'Check-in' })}
+                  value={checkInValue}
+                  action={t({ ar: 'تغيير', en: 'Change' })}
+                  onAction={changeDates}
+                />
+                <View style={styles.cardDivider} />
+                <Row
+                  isRTL={isRTL}
+                  label={t({ ar: 'المغادرة', en: 'Check-out' })}
+                  value={checkOutValue}
+                />
+              </>
+            ) : (
+              <Row
+                isRTL={isRTL}
+                label={t({ ar: 'التواريخ', en: 'Dates' })}
+                value={checkInValue}
+                action={t({ ar: 'تغيير', en: 'Change' })}
+                onAction={changeDates}
+              />
+            )}
 
             <View style={styles.cardDivider} />
 
@@ -386,8 +401,8 @@ function Row({
 }: {
   label: string;
   value: string;
-  action: string;
-  onAction: () => void;
+  action?: string;
+  onAction?: () => void;
   isRTL: boolean;
 }) {
   const { locale } = useLocale();
@@ -395,7 +410,7 @@ function Row({
     <View
       style={[
         styles.row,
-        { flexDirection: isRTL ? 'row-reverse' : 'row' },
+        { flexDirection: 'row' },
       ]}>
       <View style={{ flex: 1, gap: 2 }}>
         <ThemedText
@@ -420,16 +435,18 @@ function Row({
           {value}
         </ThemedText>
       </View>
-      <PressableScale
-        haptic="select"
-        scaleTo={0.95}
-        onPress={onAction}
-        style={styles.actionPill}>
-        <ThemedText
-          style={[styles.actionPillText, { fontFamily: fontFamilyFor('medium', locale) }]}>
-          {action}
-        </ThemedText>
-      </PressableScale>
+      {action && onAction ? (
+        <PressableScale
+          haptic="select"
+          scaleTo={0.95}
+          onPress={onAction}
+          style={styles.actionPill}>
+          <ThemedText
+            style={[styles.actionPillText, { fontFamily: fontFamilyFor('medium', locale) }]}>
+            {action}
+          </ThemedText>
+        </PressableScale>
+      ) : null}
     </View>
   );
 }
@@ -450,7 +467,7 @@ function PriceRow({
     <View
       style={[
         styles.priceRow,
-        { flexDirection: isRTL ? 'row-reverse' : 'row' },
+        { flexDirection: 'row' },
       ]}>
       <ThemedText
         numberOfLines={1}
@@ -500,7 +517,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 3,
     position: 'absolute',
-    left: Spacing[5],
+    insetInlineStart: Spacing[5],
     top: Spacing[3],
     zIndex: 2,
   },
