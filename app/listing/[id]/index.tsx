@@ -514,82 +514,6 @@ export default function ListingDetailScreen() {
                     </View>
                 ) : null}
 
-                {/* Highlights — top 3 admin-flagged amenities, fenced by an
-                    elegant separator above and below. */}
-                {highlights.length > 0 ? (
-                    <View style={styles.highlightsSection}>
-                        <View style={styles.highlightSep} />
-                        <ThemedText
-                            style={[
-                                styles.highlightsTitle,
-                                { fontFamily: fontFamilyFor("bold", locale) },
-                            ]}
-                        >
-                            {t({
-                                ar: "أهم المميزات",
-                                en: "Most important amenities",
-                            })}
-                        </ThemedText>
-                        <View
-                            style={[
-                                styles.highlightsList,
-                                { flexDirection: "row" },
-                            ]}
-                        >
-                            {highlights.map((h) => (
-                                <View key={h.key} style={styles.highlightItem}>
-                                    <View style={styles.highlightTile}>
-                                        <View style={styles.highlightInner}>
-                                            <ThemedText
-                                                style={styles.highlightIcon}
-                                            >
-                                                {h.icon ?? "✨"}
-                                            </ThemedText>
-                                        </View>
-                                    </View>
-                                    <ThemedText
-                                        numberOfLines={1}
-                                        style={[
-                                            styles.highlightLabel,
-                                            {
-                                                fontFamily: fontFamilyFor(
-                                                    "regular",
-                                                    locale,
-                                                ),
-                                                writingDirection: isRTL
-                                                    ? "rtl"
-                                                    : "ltr",
-                                            },
-                                        ]}
-                                    >
-                                        {t(h.label)}
-                                    </ThemedText>
-                                    {h.description ? (
-                                        <ThemedText
-                                            numberOfLines={2}
-                                            style={[
-                                                styles.highlightDesc,
-                                                {
-                                                    fontFamily: fontFamilyFor(
-                                                        "regular",
-                                                        locale,
-                                                    ),
-                                                    writingDirection: isRTL
-                                                        ? "rtl"
-                                                        : "ltr",
-                                                },
-                                            ]}
-                                        >
-                                            {h.description}
-                                        </ThemedText>
-                                    ) : null}
-                                </View>
-                            ))}
-                        </View>
-                        <View style={styles.highlightSep} />
-                    </View>
-                ) : null}
-
                 {/* Facilities — only when the backend returned photos */}
                 {spaces.length > 0 ? (
                     <View style={styles.section}>
@@ -703,6 +627,82 @@ export default function ListingDetailScreen() {
                                 </PressableScale>
                             );
                         })()}
+                    </View>
+                ) : null}
+
+                {/* Highlighted amenities — top 3 admin-flagged amenities, fenced by an
+                    elegant separator above and below. */}
+                {highlights.length > 0 ? (
+                    <View style={styles.highlightsSection}>
+                        <View style={styles.highlightSep} />
+                        <ThemedText
+                            style={[
+                                styles.highlightsTitle,
+                                { fontFamily: fontFamilyFor("bold", locale) },
+                            ]}
+                        >
+                            {t({
+                                ar: "المميزات البارزة",
+                                en: "Highlighted amenities",
+                            })}
+                        </ThemedText>
+                        <View
+                            style={[
+                                styles.highlightsList,
+                                { flexDirection: "row" },
+                            ]}
+                        >
+                            {highlights.map((h) => (
+                                <View key={h.key} style={styles.highlightItem}>
+                                    <View style={styles.highlightTile}>
+                                        <View style={styles.highlightInner}>
+                                            <ThemedText
+                                                style={styles.highlightIcon}
+                                            >
+                                                {h.icon ?? "✨"}
+                                            </ThemedText>
+                                        </View>
+                                    </View>
+                                    <ThemedText
+                                        numberOfLines={1}
+                                        style={[
+                                            styles.highlightLabel,
+                                            {
+                                                fontFamily: fontFamilyFor(
+                                                    "regular",
+                                                    locale,
+                                                ),
+                                                writingDirection: isRTL
+                                                    ? "rtl"
+                                                    : "ltr",
+                                            },
+                                        ]}
+                                    >
+                                        {t(h.label)}
+                                    </ThemedText>
+                                    {h.description ? (
+                                        <ThemedText
+                                            numberOfLines={2}
+                                            style={[
+                                                styles.highlightDesc,
+                                                {
+                                                    fontFamily: fontFamilyFor(
+                                                        "regular",
+                                                        locale,
+                                                    ),
+                                                    writingDirection: isRTL
+                                                        ? "rtl"
+                                                        : "ltr",
+                                                },
+                                            ]}
+                                        >
+                                            {h.description}
+                                        </ThemedText>
+                                    ) : null}
+                                </View>
+                            ))}
+                        </View>
+                        <View style={styles.highlightSep} />
                     </View>
                 ) : null}
 

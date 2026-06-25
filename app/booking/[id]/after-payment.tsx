@@ -86,6 +86,7 @@ export default function AfterPaymentScreen() {
   const [phase, setPhase] = useState<Phase>('checking');
   const [booking, setBooking] = useState<ApiBooking | null>(null);
   const checkingAnim = useRef<LottieView>(null);
+  const successAnim = useRef<LottieView>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,8 +113,11 @@ export default function AfterPaymentScreen() {
   }, [bookingId]);
 
   // Loop the loader segment (0–85) while we wait, matching the Malabis flow.
+  // Once confirmed, skip the loader entirely and play only the checkmark reveal
+  // (85–145) so the success shows immediately instead of replaying the loader.
   useEffect(() => {
     if (phase === 'checking') checkingAnim.current?.play(0, 85);
+    else if (phase === 'confirmed') successAnim.current?.play(85, 145);
   }, [phase]);
 
   const align = isRTL ? 'right' : 'left';
@@ -199,8 +203,9 @@ export default function AfterPaymentScreen() {
             ) : phase === 'confirmed' ? (
               <LottieView
                 key="confirmed"
+                ref={successAnim}
                 source={LOADER_SUCCESS}
-                autoPlay
+                autoPlay={false}
                 loop={false}
                 style={{ width: LOTTIE_W, height: LOTTIE_W }}
               />

@@ -894,6 +894,13 @@ export const updateProfile = (
     opts?: ApiRequestOptions,
 ) => apiPatch<ApiAuthUser>("/api/user", fields, opts);
 
+// Delete the current account (Apple 5.1.1(v)). OTP-confirmed: first send a code
+// via requestOtp("phone", …), then DELETE with the entered code. On 200 the JWT
+// is invalidated server-side — the client must clear its local session. Business
+// rules (active bookings, host payouts, admin) return 422 with a human message.
+export const deleteAccount = (code: string, opts: ApiRequestOptions = {}) =>
+    request<null>("DELETE", "/api/user", { code }, opts);
+
 // Picture (optionally + fields) — multipart POST. Don't set Content-Type so
 // fetch attaches the multipart boundary itself.
 export async function updateProfileWithAvatar(

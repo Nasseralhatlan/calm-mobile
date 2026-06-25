@@ -6,6 +6,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -249,8 +250,15 @@ export default function LoginModal() {
                     </View>
                 </View>
 
-                {/* Body — non-scrollable, fits the screen */}
-                <View style={styles.body}>
+                {/* Body — scrolls when the keyboard leaves little height
+                    (e.g. iPad compatibility window) so the input never clips. */}
+                <ScrollView
+                    style={styles.bodyScroll}
+                    contentContainerStyle={styles.body}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                    bounces={false}
+                >
                     {isPhone ? (
                         <>
                             <ThemedText
@@ -442,7 +450,7 @@ export default function LoginModal() {
                             {error}
                         </ThemedText>
                     ) : null}
-                </View>
+                </ScrollView>
 
                 {/* Footer — always above the keyboard via KeyboardAvoidingView */}
                 <View
@@ -609,11 +617,13 @@ const styles = StyleSheet.create({
     },
     logo: { width: 110, height: 44 },
 
+    bodyScroll: { flex: 1 },
     body: {
-        flex: 1,
+        flexGrow: 1,
         paddingHorizontal: Spacing[6],
-        paddingTop: Spacing[8],
+        paddingTop: Spacing[6],
         gap: Spacing[4],
+        paddingBottom: Spacing[4],
     },
     title: {
         fontSize: 24,

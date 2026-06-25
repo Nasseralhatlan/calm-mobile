@@ -3,7 +3,7 @@
         "name": "Calm كالم",
         "slug": "calm",
         "owner": "calmapp",
-        "version": "1.1.3",
+        "version": "1.1.5",
         "orientation": "portrait",
         "icon": "./assets/images/icon.png",
         "scheme": "calmmobile",
@@ -15,11 +15,15 @@
         "ios": {
             "bundleIdentifier": "calm.app",
             "supportsTablet": false,
+            "requireFullScreen": true,
             "infoPlist": {
                 "CFBundleLocalizations": ["en", "ar"],
                 "CFBundleAllowMixedLocalizations": true,
                 "ITSAppUsesNonExemptEncryption": false,
-                "UIUserInterfaceStyle": "Light"
+                "UIUserInterfaceStyle": "Light",
+                "UISupportedInterfaceOrientations~ipad": [
+                    "UIInterfaceOrientationPortrait"
+                ]
             }
         },
         "android": {

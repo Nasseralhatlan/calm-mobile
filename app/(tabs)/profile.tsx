@@ -11,6 +11,7 @@ import {
 
 import { AboutIcon } from "@/components/icons/about-icon";
 import { ContactIcon } from "@/components/icons/contact-icon";
+import { DeleteIcon } from "@/components/icons/delete-icon";
 import { LanguageIcon } from "@/components/icons/language-icon";
 import { PolicyIcon } from "@/components/icons/policy-icon";
 import { PrivacyIcon } from "@/components/icons/privacy-icon";
@@ -423,6 +424,14 @@ export default function ProfileScreen() {
                             locale={locale}
                         />
                     ))}
+                    {isAuthed ? (
+                        <MenuRow
+                            Icon={DeleteIcon}
+                            label={t({ ar: "حذف الحساب", en: "Delete account" })}
+                            onPress={() => router.push("/delete-account")}
+                            locale={locale}
+                        />
+                    ) : null}
                     {isAuthed ? (
                         <MenuRow
                             Icon={SignOutIcon}
