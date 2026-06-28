@@ -13,7 +13,7 @@ export const HOST_HEADER_HEIGHT = 66;
 export function HostHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   const { locale } = useLocale();
   const isRTL = locale === 'ar';
-  const align = isRTL ? ('right' as const) : ('left' as const);
+  const align = 'left' as const;
   const wd = isRTL ? ('rtl' as const) : ('ltr' as const);
 
   return (

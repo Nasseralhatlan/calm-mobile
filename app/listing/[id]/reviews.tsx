@@ -109,7 +109,7 @@ export default function ReviewsModal() {
                     numberOfLines={1}
                     style={[
                       styles.name,
-                      { fontFamily: fontFamilyFor('bold', locale), textAlign: isRTL ? 'right' : 'left' },
+                      { fontFamily: fontFamilyFor('bold', locale), textAlign: 'left' },
                     ]}>
                     {reviewerName(r.reviewer_name)}
                   </ThemedText>
@@ -117,7 +117,7 @@ export default function ReviewsModal() {
                     numberOfLines={1}
                     style={[
                       styles.date,
-                      { fontFamily: fontFamilyFor('regular', locale), textAlign: isRTL ? 'right' : 'left' },
+                      { fontFamily: fontFamilyFor('regular', locale), textAlign: 'left' },
                     ]}>
                     {formatReviewDate(r.created_at)}
                   </ThemedText>
@@ -132,7 +132,7 @@ export default function ReviewsModal() {
                 <ThemedText
                   style={[
                     styles.body,
-                    { fontFamily: fontFamilyFor('regular', locale), textAlign: isRTL ? 'right' : 'left' },
+                    { fontFamily: fontFamilyFor('regular', locale), textAlign: 'left' },
                   ]}>
                   {r.comment}
                 </ThemedText>

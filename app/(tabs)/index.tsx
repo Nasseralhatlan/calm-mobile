@@ -36,13 +36,12 @@ import { invalidatePlaceCaches } from "@/data/caches";
 import { useHomeData, useHomeRefresh } from "@/data/home";
 import { setPlaceList } from "@/data/place-list";
 import type { ApiPlace, ApiPlaceType } from "@/lib/api";
-import { LAYOUT_RTL, useLocale, useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
 
 export default function ExploreScreen() {
     const palette = Colors.light;
     const t = useT();
-    const { locale } = useLocale();
-    const isRTL = LAYOUT_RTL;
+    const { locale, isRTL } = useLocale();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const headerHeight = insets.top + 132;
@@ -179,9 +178,9 @@ export default function ExploreScreen() {
                         <ThemedText
                             variant="title"
                             style={[
-                                styles.greeting,
                                 {
-                                    textAlign: isRTL ? "right" : "left",
+                                    ...styles.greeting,
+                                    textAlign: "left",
                                     writingDirection: isRTL ? "rtl" : "ltr",
                                 },
                             ]}
@@ -403,7 +402,7 @@ function PlacesSection({
                         style={[
                             styles.sectionTitle,
                             {
-                                textAlign: isRTL ? "right" : "left",
+                                textAlign: "left",
                                 writingDirection: isRTL ? "rtl" : "ltr",
                             },
                         ]}
@@ -420,7 +419,7 @@ function PlacesSection({
                             styles.emptyText,
                             {
                                 fontFamily: fontFamilyFor("regular", locale),
-                                textAlign: isRTL ? "right" : "left",
+                                textAlign: "left",
                                 writingDirection: isRTL ? "rtl" : "ltr",
                             },
                         ]}

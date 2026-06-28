@@ -24,7 +24,7 @@ export function Section({ title, divider = true, style, children }: SectionProps
               styles.title,
               {
                 fontFamily: fontFamilyFor('bold', locale),
-                textAlign: isRTL ? 'right' : 'left',
+                textAlign: 'left',
                 writingDirection: isRTL ? 'rtl' : 'ltr',
               },
             ]}>

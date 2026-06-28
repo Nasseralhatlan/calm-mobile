@@ -242,7 +242,7 @@ export default function BookingSummaryScreen() {
                     styles.listingTitle,
                     {
                       fontFamily: fontFamilyFor('bold', locale),
-                      textAlign: isRTL ? 'right' : 'left',
+                      textAlign: 'left',
                       writingDirection: isRTL ? 'rtl' : 'ltr',
                     },
                   ]}>
@@ -418,7 +418,7 @@ function Row({
             styles.rowLabel,
             {
               fontFamily: fontFamilyFor('bold', locale),
-              textAlign: isRTL ? 'right' : 'left',
+              textAlign: 'left',
               writingDirection: isRTL ? 'rtl' : 'ltr',
             },
           ]}>
@@ -429,7 +429,7 @@ function Row({
             styles.rowValue,
             {
               fontFamily: fontFamilyFor('regular', locale),
-              textAlign: isRTL ? 'right' : 'left',
+              textAlign: 'left',
             },
           ]}>
           {value}
@@ -475,7 +475,7 @@ function PriceRow({
           emphasis ? styles.priceLabelStrong : styles.priceLabel,
           {
             fontFamily: fontFamilyFor(emphasis ? 'bold' : 'regular', locale),
-            textAlign: isRTL ? 'right' : 'left',
+            textAlign: 'left',
             writingDirection: isRTL ? 'rtl' : 'ltr',
           },
         ]}>

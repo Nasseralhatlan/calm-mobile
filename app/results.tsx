@@ -300,7 +300,7 @@ export default function ResultsScreen() {
                         style={styles.iconBtn}
                     >
                         <IconSymbol
-                            name="chevron.left"
+                            name={locale === "ar" ? "chevron.right" : "chevron.left"}
                             size={20}
                             color={Colors.light.text}
                         />

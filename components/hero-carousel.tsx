@@ -16,6 +16,7 @@ import Animated, {
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { useLocale } from '@/lib/i18n';
 
 const AnimatedGHScrollView = Animated.createAnimatedComponent(GHScrollView);
 
@@ -38,6 +39,7 @@ export function HeroCarousel({
   onSwipe,
   bottomInset = 0,
 }: HeroCarouselProps) {
+  const { isRTL } = useLocale();
   const [page, setPage] = useState(0);
   const scrollX = useSharedValue(0);
   // |x| so the page is correct whether the scroll origin is LTR or RTL.
@@ -102,12 +104,16 @@ export function HeroCarousel({
           showsHorizontalScrollIndicator={false}
           onScroll={onScrollH}
           scrollEventThrottle={16}
-          bounces={false}>
+          bounces={false}
+          // RTL carousel via the mirror trick: flipping the scroll view on X
+          // reverses both layout and swipe gesture (push right = next) without
+          // relying on native I18nManager. Each slide is un-mirrored below.
+          style={isRTL ? styles.flipX : undefined}>
           {photos.map((url, i) => (
             <Pressable
               key={url}
               onPress={() => onPhotoPress?.(i)}
-              style={styles.heroSlide}>
+              style={[styles.heroSlide, isRTL && styles.flipX]}>
               <Image
                 source={{ uri: url }}
                 recyclingKey={url}
@@ -121,7 +127,11 @@ export function HeroCarousel({
       </Animated.View>
 
       <View
-        style={[styles.dotsWrap, { bottom: Spacing[4] + bottomInset }]}
+        style={[
+          styles.dotsWrap,
+          { bottom: Spacing[4] + bottomInset },
+          isRTL && styles.flipX,
+        ]}
         pointerEvents="none">
         {photos.map((_, i) => (
           <Dot key={i} index={i} pageIndex={pageIndex} />
@@ -166,6 +176,13 @@ const styles = StyleSheet.create({
   heroSlide: {
     width: SCREEN_W,
     height: HERO_HEIGHT,
+  },
+  flipX: {
+    // Neutralize the inherited RTL direction so the scroll lays out / starts
+    // LTR, then mirror it — otherwise the two flips cancel and it opens on the
+    // last image.
+    direction: 'ltr',
+    transform: [{ scaleX: -1 }],
   },
   hero: {
     width: SCREEN_W,

@@ -261,6 +261,13 @@ export interface ApiPlace {
     id: string;
     title: string;
     description: string;
+    // Bilingual variants (additive; fall back to title/description/rules).
+    title_ar?: string | null;
+    title_en?: string | null;
+    description_ar?: string | null;
+    description_en?: string | null;
+    rules_ar?: string | null;
+    rules_en?: string | null;
     price: number;
     per_day_prices: Record<WeekDay, number>;
     check_in_time: string;
@@ -615,6 +622,9 @@ export const cancelBooking = (bookingId: string, opts?: ApiRequestOptions) =>
 export interface ApiBookingPlaceSummary {
     id: string;
     title: string;
+    // Bilingual variants (additive; fall back to title).
+    title_ar?: string | null;
+    title_en?: string | null;
     cover_photo_url: string | null;
     type: { name_en: string; name_ar: string; icon: string };
     city: { name_en: string; name_ar: string };
@@ -815,6 +825,8 @@ export interface ApiAuthUser {
     country_id: string | null;
     role: "user" | "admin";
     is_host?: boolean;
+    // Preferred language for the account (drives notification language too).
+    locale?: "ar" | "en";
     phone_verified_at: string | null;
     email_verified_at: string | null;
     created_at: string;
@@ -877,6 +889,7 @@ export interface UpdateProfileFields {
     age?: number;
     birth_date?: string; // YYYY-MM-DD
     email?: string;
+    locale?: "ar" | "en";
 }
 
 export interface AvatarUpload {

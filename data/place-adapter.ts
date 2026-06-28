@@ -48,9 +48,23 @@ export function adaptApiPlaceToListing(
   return {
     id: p.id,
     type: inferType(p.type.name_en + ' ' + p.type.name_ar),
-    title: { ar: p.title, en: p.title },
-    description: { ar: p.description, en: p.description },
-    rules: p.rules ? { ar: p.rules, en: p.rules } : undefined,
+    // Bilingual fields with cross-language + legacy fallback (matches the
+    // backend's pick pattern); useT()/pick() then select the active language.
+    title: {
+      ar: p.title_ar || p.title_en || p.title,
+      en: p.title_en || p.title_ar || p.title,
+    },
+    description: {
+      ar: p.description_ar || p.description_en || p.description,
+      en: p.description_en || p.description_ar || p.description,
+    },
+    rules:
+      p.rules_ar || p.rules_en || p.rules
+        ? {
+            ar: p.rules_ar || p.rules_en || p.rules || '',
+            en: p.rules_en || p.rules_ar || p.rules || '',
+          }
+        : undefined,
     city: { ar: p.city.name_ar, en: p.city.name_en },
     region: p.city_area
       ? { ar: p.city_area.name_ar, en: p.city_area.name_en }

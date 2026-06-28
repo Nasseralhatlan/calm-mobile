@@ -3,68 +3,75 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { I18nManager } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import RNRestart from "react-native-restart";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AnimatedSplash } from "@/components/animated-splash";
 import { ModeBootstrap } from "@/components/mode-bootstrap";
 import { AppModeProvider } from "@/data/app-mode";
-import { AuthStateProvider } from "@/data/auth-state";
+import { AuthStateProvider, useAuthState } from "@/data/auth-state";
 import { HomeDataProvider } from "@/data/home";
 import { LikesProvider } from "@/data/likes";
-import { getStoredLocale } from "@/data/locale-setting";
 import { LoginCountryProvider } from "@/data/login-country";
 import { SelectedCityProvider } from "@/data/selected-city";
 import { useBootstrap } from "@/hooks/use-bootstrap";
-import { LOCALE_SWITCHING_ENABLED, LocaleProvider } from "@/lib/i18n";
+import { LocaleProvider, useLocale } from "@/lib/i18n";
 import { SplashStatusProvider } from "@/lib/splash-status";
 
 SplashScreen.preventAutoHideAsync();
 
-// Reconcile the native canvas direction with the user's stored locale BEFORE the
-// app renders. If they disagree (first launch defaults to 'ar'/RTL, or the user
-// just toggled), force the native direction and restart once so RN lays out in
-// the right direction from the first frame. Guarded against a restart loop by
-// comparing against `I18nManager.isRTL`.
-function useDirectionReady(): boolean {
-    const [ready, setReady] = useState(false);
-    useEffect(() => {
-        let cancelled = false;
-        (async () => {
-            // Arabic/RTL disabled for now → force LTR regardless of device or the
-            // stored setting. When re-enabled, reconcile to the stored locale.
-            const desiredRTL = LOCALE_SWITCHING_ENABLED
-                ? (await getStoredLocale()) === "ar"
-                : false;
-            if (I18nManager.isRTL !== desiredRTL) {
-                // allowRTL(false) when forcing LTR fully disables RTL even on
-                // Arabic devices; allowRTL(true) only matters when re-enabled.
-                I18nManager.allowRTL(desiredRTL);
-                I18nManager.forceRTL(desiredRTL);
-                try {
-                    RNRestart.restart();
-                    return; // app reloads; nothing below runs
-                } catch {
-                    // Restart unavailable (e.g. Expo Go) — proceed; the forced
-                    // direction takes effect on the next manual reload.
-                }
-            }
-            if (!cancelled) setReady(true);
-        })();
-        return () => {
-            cancelled = true;
-        };
-    }, []);
-    return ready;
-}
+// Pin the NATIVE canvas to LTR and keep it there. Layout direction is driven by a
+// Yoga `direction` style from the user's stored locale (see lib/i18n + RootStack),
+// not by native RTL — so switching is instant (no restart) and an Arabic *device*
+// never flips the layout on its own. allowRTL(false) disables device-driven RTL.
+I18nManager.allowRTL(false);
+I18nManager.forceRTL(false);
 
 export const unstable_settings = {
     anchor: "(tabs)",
 };
+
+// Renders the navigator with a reactive layout direction. Lives under
+// LocaleProvider so it re-renders on language switch; `contentStyle.direction`
+// flips every screen (including native modal/sheet presentations) instantly.
+// On login, adopt the locale saved on the user's profile — once per session.
+// The user's in-app choice still wins afterward (kept in sync at the toggle).
+function LocaleAuthSync() {
+    const { user } = useAuthState();
+    const { locale, setLocale } = useLocale();
+    const adopted = useRef(false);
+    useEffect(() => {
+        if (!user) {
+            adopted.current = false;
+            return;
+        }
+        if (adopted.current) return;
+        adopted.current = true;
+        if (user.locale && user.locale !== locale) {
+            void setLocale(user.locale, { sync: false });
+        }
+    }, [user, locale, setLocale]);
+    return null;
+}
+
+function RootStack({ children }: { children: ReactNode }) {
+    const { isRTL } = useLocale();
+    return (
+        <Stack
+            screenOptions={{
+                contentStyle: {
+                    backgroundColor: "#FEFEFE",
+                    direction: isRTL ? "rtl" : "ltr",
+                },
+            }}
+        >
+            {children}
+        </Stack>
+    );
+}
 
 export default function RootLayout() {
     const [fontsLoaded] = useFonts({
@@ -81,8 +88,7 @@ export default function RootLayout() {
     });
 
     const { isReady: bootstrapReady, data: homeData, refresh: refreshHome } = useBootstrap();
-    const directionReady = useDirectionReady();
-    const appReady = fontsLoaded && bootstrapReady && directionReady;
+    const appReady = fontsLoaded && bootstrapReady;
     const [splashGone, setSplashGone] = useState(false);
 
     return (
@@ -101,14 +107,7 @@ export default function RootLayout() {
                                                 <ThemeProvider
                                                     value={DefaultTheme}
                                                 >
-                                                    <Stack
-                                                        screenOptions={{
-                                                            contentStyle: {
-                                                                backgroundColor:
-                                                                    "#FEFEFE",
-                                                            },
-                                                        }}
-                                                    >
+                                                    <RootStack>
                                                         <Stack.Screen
                                                             name="(tabs)"
                                                             options={{
@@ -390,7 +389,8 @@ export default function RootLayout() {
                                                                 },
                                                             }}
                                                         />
-                                                    </Stack>
+                                                    </RootStack>
+                                                    <LocaleAuthSync />
                                                     <ModeBootstrap />
                                                     <StatusBar style="dark" />
                                                     {!splashGone ? (

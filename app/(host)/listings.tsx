@@ -48,7 +48,7 @@ function ListingCardRow({ listing }: { listing: ApiHostListing }) {
   const t = useT();
   const isRTL = locale === 'ar';
   const rowDir = 'row' as const;
-  const align = isRTL ? ('right' as const) : ('left' as const);
+  const align = 'left' as const;
   const wd = isRTL ? ('rtl' as const) : ('ltr' as const);
 
   const review = REVIEW_THEME[listing.review_status];

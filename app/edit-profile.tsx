@@ -94,7 +94,7 @@ export default function EditProfileScreen() {
   const t = useT();
   const { locale } = useLocale();
   const isRTL = locale === 'ar';
-  const align = isRTL ? ('right' as const) : ('left' as const);
+  const align = 'left' as const;
   const insets = useSafeAreaInsets();
   const { user, updateUser } = useAuthState();
 

@@ -225,7 +225,13 @@ export default function SearchModal() {
       <Animated.View
         style={[
           styles.frame,
-          { paddingTop: insets.top + Spacing[3], paddingBottom: insets.bottom + Spacing[3] },
+          {
+            paddingTop: insets.top + Spacing[3],
+            paddingBottom: insets.bottom + Spacing[3],
+            // This modal is a transparentModal and doesn't inherit the root
+            // direction — set it explicitly so the card content flows correctly.
+            direction: locale === 'ar' ? 'rtl' : 'ltr',
+          },
           contentStyle,
         ]}
         pointerEvents="box-none">
@@ -363,6 +369,9 @@ const styles = StyleSheet.create({
   },
 
   footer: {
+    // Pin LTR so "Clear all" stays left and the primary Search button stays
+    // right in both languages — the root `direction` would otherwise swap them.
+    direction: 'ltr',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

@@ -11,7 +11,7 @@ import Animated, {
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
-import { LAYOUT_RTL, useLocale, useT } from '@/lib/i18n';
+import { useLocale, useT } from '@/lib/i18n';
 
 export interface MultiSelectItem {
   id: string;
@@ -100,7 +100,7 @@ export function MultiSelectContent({
       <ThemedText
         style={[
           styles.subtitle,
-          { fontFamily: fontFamilyFor('regular', locale), textAlign: isRTL ? 'right' : 'left' },
+          { fontFamily: fontFamilyFor('regular', locale), textAlign: 'left' },
         ]}>
         {subtitle ?? t({ ar: 'اختر واحداً أو أكثر', en: 'Pick one or more' })}
       </ThemedText>

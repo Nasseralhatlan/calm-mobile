@@ -20,7 +20,7 @@ export default function HostFinance() {
   const { locale } = useLocale();
   const { token } = useAuthState();
   const isRTL = locale === 'ar';
-  const align = isRTL ? ('right' as const) : ('left' as const);
+  const align = 'left' as const;
   const wd = isRTL ? ('rtl' as const) : ('ltr' as const);
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + HOST_HEADER_HEIGHT;

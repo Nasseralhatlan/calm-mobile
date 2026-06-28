@@ -36,7 +36,7 @@ import {
   type ApiOtpRequestResponse,
 } from "@/lib/api";
 import { fireHaptic } from "@/lib/haptics";
-import { LAYOUT_RTL, useLocale, useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
 
 type Step = "intro" | "otp";
 
@@ -210,7 +210,13 @@ export default function DeleteAccountModal() {
             style={styles.closeBtn}
           >
             <IconSymbol
-              name={isIntro ? "xmark" : "chevron.left"}
+              name={
+                isIntro
+                  ? "xmark"
+                  : locale === "ar"
+                    ? "chevron.right"
+                    : "chevron.left"
+              }
               size={18}
               color={Colors.light.text}
             />
@@ -470,14 +476,12 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     color: Colors.light.text,
     textAlign: "center",
-    writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
   },
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
     color: Colors.light.textMuted,
     textAlign: "center",
-    writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     paddingHorizontal: Spacing[2],
   },
 
@@ -549,7 +553,6 @@ const styles = StyleSheet.create({
     color: DANGER,
     marginTop: Spacing[3],
     textAlign: "center",
-    writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
   },
   supportBtn: {
     alignSelf: "center",

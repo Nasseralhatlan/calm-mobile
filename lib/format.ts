@@ -73,13 +73,23 @@ export function addDaysIso(iso: string, days: number): string {
 }
 
 /** A single booking date like "Sat, 20 Jun". Forces the Gregorian calendar
- * (ar-SA defaults to Hijri). */
+ * (ar-SA defaults to Hijri). Built defensively because some JS engines (Hermes)
+ * throw on rich Arabic locale strings — falls back to en-US rather than crash. */
 export function formatBookingDate(iso: string, locale: Locale): string {
-  return new Intl.DateTimeFormat(locale === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US', {
+  const date = new Date(`${iso}T00:00:00`);
+  const opts: Intl.DateTimeFormatOptions = {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
-  }).format(new Date(`${iso}T00:00:00`));
+  };
+  try {
+    return new Intl.DateTimeFormat(
+      locale === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US',
+      opts,
+    ).format(date);
+  } catch {
+    return new Intl.DateTimeFormat('en-US', opts).format(date);
+  }
 }
 
 /** "{date} · {time}" for a booking endpoint, dropping the time if absent. */

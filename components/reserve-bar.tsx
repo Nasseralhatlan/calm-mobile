@@ -75,6 +75,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
   row: {
+    // Pin LTR so the order is fixed in both languages: price on the left,
+    // Reserve CTA on the right. (The root `direction` would otherwise flip it.)
+    direction: 'ltr',
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing[3],
@@ -86,12 +89,14 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 22,
     color: Colors.light.text,
+    textAlign: 'left',
   },
   unit: {
     fontSize: 12,
     lineHeight: 16,
     color: Colors.light.textMuted,
     marginTop: 2,
+    textAlign: 'left',
   },
   cta: {
     backgroundColor: Colors.light.coral,

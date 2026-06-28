@@ -53,7 +53,7 @@ function ListingCardBase({ listing, startDate, endDate }: ListingCardProps) {
 
   const textBase = {
     color: '#000000',
-    textAlign: isRTL ? ('right' as const) : ('left' as const),
+    textAlign: 'left' as const,
     writingDirection: isRTL ? ('rtl' as const) : ('ltr' as const),
   };
 
@@ -141,6 +141,7 @@ function PhotoCarousel({
   onToggleLike: () => void;
   isSuperhost: boolean;
 }) {
+  const { isRTL } = useLocale();
   const [width, setWidth] = useState(DEFAULT_CARD_WIDTH);
   const scrollX = useSharedValue(0);
   const scrollRef = useRef<GHScrollView>(null);
@@ -179,7 +180,13 @@ function PhotoCarousel({
         onScroll={onScroll}
         scrollEventThrottle={16}
         bounces
-        alwaysBounceHorizontal>
+        alwaysBounceHorizontal
+        // RTL carousel via the mirror trick: flipping the scroll view on X
+        // reverses BOTH the layout (opens on the right) AND the swipe gesture
+        // (push right = next) regardless of native I18nManager. Each image is
+        // un-mirrored below so it renders normally.
+        style={isRTL ? styles.flipX : undefined}>
+
         {/* Render all photos — a listing has only a handful, and gating mounts on
             a scroll-derived index breaks under RTL (the offset reverses). */}
         {photos.map((url) => (
@@ -187,7 +194,7 @@ function PhotoCarousel({
             key={url}
             source={{ uri: url }}
             recyclingKey={url}
-            style={[styles.image, { width }]}
+            style={[styles.image, { width }, isRTL && styles.flipX]}
             contentFit="cover"
             transition={200}
           />
@@ -204,7 +211,9 @@ function PhotoCarousel({
       ) : null}
 
       {photos.length > 1 ? (
-        <View style={styles.dotsWrap} pointerEvents="none">
+        <View
+          style={[styles.dotsWrap, isRTL && styles.flipX]}
+          pointerEvents="none">
           {photos.map((_, i) => (
             <Dot key={i} index={i} pageIndex={pageIndex} />
           ))}
@@ -239,6 +248,13 @@ const styles = StyleSheet.create({
   },
   image: {
     height: '100%',
+  },
+  flipX: {
+    // Neutralize the inherited RTL direction so the scroll lays out / starts
+    // LTR, then mirror it — otherwise the two flips cancel and it opens on the
+    // last image.
+    direction: 'ltr',
+    transform: [{ scaleX: -1 }],
   },
   imagePlaceholder: {
     backgroundColor: '#F3F4F6',

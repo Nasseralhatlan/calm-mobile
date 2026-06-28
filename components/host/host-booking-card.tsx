@@ -38,7 +38,7 @@ export function HostBookingCard({ booking }: { booking: ApiHostBookingItem }) {
   const t = useT();
   const isRTL = locale === 'ar';
   const rowDir = 'row' as const;
-  const align = isRTL ? ('right' as const) : ('left' as const);
+  const align = 'left' as const;
   const wd = isRTL ? ('rtl' as const) : ('ltr' as const);
 
   const place = booking.place;

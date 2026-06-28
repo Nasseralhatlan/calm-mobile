@@ -98,7 +98,7 @@ export default function AmenitiesModal() {
           <ThemedText
             style={[
               styles.empty,
-              { fontFamily: fontFamilyFor('regular', locale), textAlign: isRTL ? 'right' : 'left' },
+              { fontFamily: fontFamilyFor('regular', locale), textAlign: 'left' },
             ]}>
             {t({ ar: 'لا توجد مميزات بعد', en: 'No features yet' })}
           </ThemedText>
@@ -112,7 +112,7 @@ export default function AmenitiesModal() {
                 styles.groupTitle,
                 {
                   fontFamily: fontFamilyFor('bold', locale),
-                  textAlign: isRTL ? 'right' : 'left',
+                  textAlign: 'left',
                   writingDirection: isRTL ? 'rtl' : 'ltr',
                 },
               ]}>
@@ -136,7 +136,7 @@ export default function AmenitiesModal() {
                         styles.label,
                         {
                           fontFamily: fontFamilyFor('medium', locale),
-                          textAlign: isRTL ? 'right' : 'left',
+                          textAlign: 'left',
                         },
                       ]}>
                       {t(a.label)}
@@ -159,7 +159,7 @@ export default function AmenitiesModal() {
                         styles.itemDesc,
                         {
                           fontFamily: fontFamilyFor('regular', locale),
-                          textAlign: isRTL ? 'right' : 'left',
+                          textAlign: 'left',
                           writingDirection: isRTL ? 'rtl' : 'ltr',
                         },
                       ]}>

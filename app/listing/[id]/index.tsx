@@ -462,7 +462,7 @@ export default function ListingDetailScreen() {
                                 styles.sectionTitle,
                                 {
                                     fontFamily: fontFamilyFor("bold", locale),
-                                    textAlign: isRTL ? "right" : "left",
+                                    textAlign: "left",
                                     writingDirection: isRTL ? "rtl" : "ltr",
                                 },
                             ]}
@@ -478,7 +478,7 @@ export default function ListingDetailScreen() {
                                         "regular",
                                         locale,
                                     ),
-                                    textAlign: isRTL ? "right" : "left",
+                                    textAlign: "left",
                                     writingDirection: isRTL ? "rtl" : "ltr",
                                 },
                             ]}
@@ -522,7 +522,7 @@ export default function ListingDetailScreen() {
                                 styles.sectionTitle,
                                 {
                                     fontFamily: fontFamilyFor("bold", locale),
-                                    textAlign: isRTL ? "right" : "left",
+                                    textAlign: "left",
                                     writingDirection: isRTL ? "rtl" : "ltr",
                                 },
                             ]}
@@ -563,9 +563,7 @@ export default function ListingDetailScreen() {
                                                                 "medium",
                                                                 locale,
                                                             ),
-                                                        textAlign: isRTL
-                                                            ? "right"
-                                                            : "left",
+                                                        textAlign: "left",
                                                     },
                                                 ]}
                                             >
@@ -583,9 +581,7 @@ export default function ListingDetailScreen() {
                                                                 "regular",
                                                                 locale,
                                                             ),
-                                                        textAlign: isRTL
-                                                            ? "right"
-                                                            : "left",
+                                                        textAlign: "left",
                                                     },
                                                 ]}
                                             >
@@ -714,7 +710,7 @@ export default function ListingDetailScreen() {
                                 styles.sectionTitle,
                                 {
                                     fontFamily: fontFamilyFor("bold", locale),
-                                    textAlign: isRTL ? "right" : "left",
+                                    textAlign: "left",
                                     writingDirection: isRTL ? "rtl" : "ltr",
                                 },
                             ]}
@@ -752,9 +748,7 @@ export default function ListingDetailScreen() {
                                                     "regular",
                                                     locale,
                                                 ),
-                                                textAlign: isRTL
-                                                    ? "right"
-                                                    : "left",
+                                                textAlign: "left",
                                             },
                                         ]}
                                     >
@@ -804,7 +798,7 @@ export default function ListingDetailScreen() {
                                 styles.sectionTitle,
                                 {
                                     fontFamily: fontFamilyFor("bold", locale),
-                                    textAlign: isRTL ? "right" : "left",
+                                    textAlign: "left",
                                     writingDirection: isRTL ? "rtl" : "ltr",
                                 },
                             ]}
@@ -1016,9 +1010,7 @@ export default function ListingDetailScreen() {
                                                                 "bold",
                                                                 locale,
                                                             ),
-                                                        textAlign: isRTL
-                                                            ? "right"
-                                                            : "left",
+                                                        textAlign: "left",
                                                     },
                                                 ]}
                                             >
@@ -1034,9 +1026,7 @@ export default function ListingDetailScreen() {
                                                                 "regular",
                                                                 locale,
                                                             ),
-                                                        textAlign: isRTL
-                                                            ? "right"
-                                                            : "left",
+                                                        textAlign: "left",
                                                     },
                                                 ]}
                                             >
@@ -1075,9 +1065,7 @@ export default function ListingDetailScreen() {
                                                             "regular",
                                                             locale,
                                                         ),
-                                                        textAlign: isRTL
-                                                            ? "right"
-                                                            : "left",
+                                                        textAlign: "left",
                                                     },
                                                 ]}
                                             >
@@ -1099,9 +1087,7 @@ export default function ListingDetailScreen() {
                                                                 "medium",
                                                                 locale,
                                                             ),
-                                                            textAlign: isRTL
-                                                                ? "right"
-                                                                : "left",
+                                                            textAlign: "left",
                                                         },
                                                     ]}
                                                 >
@@ -1148,7 +1134,7 @@ export default function ListingDetailScreen() {
                                 styles.sectionTitle,
                                 {
                                     fontFamily: fontFamilyFor("bold", locale),
-                                    textAlign: isRTL ? "right" : "left",
+                                    textAlign: "left",
                                     writingDirection: isRTL ? "rtl" : "ltr",
                                 },
                             ]}
@@ -1166,7 +1152,7 @@ export default function ListingDetailScreen() {
                                         "regular",
                                         locale,
                                     ),
-                                    textAlign: isRTL ? "right" : "left",
+                                    textAlign: "left",
                                     writingDirection: isRTL ? "rtl" : "ltr",
                                 },
                             ]}
@@ -1233,7 +1219,7 @@ export default function ListingDetailScreen() {
                         haptic="back"
                     >
                         <IconSymbol
-                            name="chevron.left"
+                            name={isRTL ? "chevron.right" : "chevron.left"}
                             size={18}
                             color={Colors.light.text}
                         />

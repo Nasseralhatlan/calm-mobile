@@ -2,7 +2,7 @@ import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { FlatList, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -28,10 +28,26 @@ export default function PhotoViewerScreen() {
 
     // Captured once on mount — the gallery stashed the set + start index here.
     const cfg = useRef(getPhotoViewer()).current;
-    const items = cfg?.items ?? [];
+    const items = useMemo(() => cfg?.items ?? [], [cfg]);
     const placeId = cfg?.placeId ?? "";
     const [index, setIndex] = useState(cfg?.index ?? 0);
     const [zoomed, setZoomed] = useState(false);
+
+    // RTL previewer: a zoomable FlatList can't use the scaleX mirror trick (it
+    // would invert pinch-pan), so instead reverse the data and map indices —
+    // the list scrolls plain LTR but, with reversed data, the first photo sits
+    // on the right and dragging right advances. `index` stays LOGICAL.
+    const isRTL = locale === "ar";
+    const len = items.length;
+    const data = useMemo(
+        () => (isRTL ? items.slice().reverse() : items),
+        [items, isRTL],
+    );
+    const toListIndex = (logical: number) => (isRTL ? len - 1 - logical : logical);
+    const toLogical = (li: number) => (isRTL ? len - 1 - li : li);
+    // Keep the latest mapper reachable from the stable viewability ref below.
+    const toLogicalRef = useRef(toLogical);
+    toLogicalRef.current = toLogical;
 
     const { isLiked, toggle } = useLikes();
     const liked = isLiked(placeId, cfg?.likedFallback ?? false);
@@ -47,7 +63,7 @@ export default function PhotoViewerScreen() {
         ({ viewableItems }: { viewableItems: { index: number | null }[] }) => {
             const i = viewableItems[0]?.index;
             if (i != null) {
-                setIndex(i);
+                setIndex(toLogicalRef.current(i));
                 if (cfg?.placeId) addPlaceInterest(cfg.placeId, "swipe", 6);
             }
         },
@@ -89,12 +105,18 @@ export default function PhotoViewerScreen() {
             <View style={styles.backdropDim} pointerEvents="none" />
 
             <FlatList
-                data={items}
+                data={data}
                 keyExtractor={(_, i) => String(i)}
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
-                initialScrollIndex={index}
+                // Force LTR layout so getItemLayout's offsets (width * i) match the
+                // actual item positions — otherwise the inherited RTL direction
+                // mirrors the layout and the virtualization window misaligns,
+                // leaving every page blank except the middle. RTL is achieved by
+                // reversing `data` instead.
+                style={styles.list}
+                initialScrollIndex={toListIndex(index)}
                 getItemLayout={(_, i) => ({
                     length: width,
                     offset: width * i,
@@ -105,23 +127,16 @@ export default function PhotoViewerScreen() {
                 // Lock paging while an image is zoomed in so panning works.
                 scrollEnabled={!zoomed}
                 windowSize={3}
-                initialNumToRender={1}
-                maxToRenderPerBatch={2}
-                removeClippedSubviews
-                renderItem={({ item, index: i }) =>
-                    // Lazy: only the visible page + neighbours actually mount.
-                    Math.abs(i - index) <= 1 ? (
-                        <ZoomableImage
-                            uri={item.uri}
-                            width={width}
-                            height={height}
-                            active={i === index}
-                            onPinchChange={setZoomed}
-                        />
-                    ) : (
-                        <View style={{ width, height }} />
-                    )
-                }
+                renderItem={({ item, index: i }) => (
+                    <ZoomableImage
+                        uri={item.uri}
+                        width={width}
+                        height={height}
+                        // `i` is the list position; `index` is logical.
+                        active={toLogical(i) === index}
+                        onPinchChange={setZoomed}
+                    />
+                )}
             />
 
             {/* Self-contained blurry info pill: section + counter. */}
@@ -167,7 +182,7 @@ export default function PhotoViewerScreen() {
                     style={StyleSheet.absoluteFill}
                 />
                 <View style={styles.pillTint} />
-                <IconSymbol name="chevron.left" size={22} color="#FFFFFF" />
+                <IconSymbol name={locale === "ar" ? "chevron.right" : "chevron.left"} size={22} color="#FFFFFF" />
             </PressableScale>
 
             {/* Self-contained blurry share + like cluster. */}
@@ -212,6 +227,8 @@ export default function PhotoViewerScreen() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: "#000000" },
+    // Always LTR; RTL is handled by reversing the data + index mapping.
+    list: { direction: "ltr" },
     backdropDim: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: "rgba(0,0,0,0.35)",

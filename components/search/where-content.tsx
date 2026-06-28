@@ -7,7 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
 import { useHomeData } from '@/data/home';
 import type { ApiCity } from '@/lib/api';
-import { LAYOUT_RTL, useLocale, useT } from '@/lib/i18n';
+import { useLocale, useT } from '@/lib/i18n';
 
 interface WhereContentProps {
   value: ApiCity | null;
@@ -55,7 +55,7 @@ export function WhereContent({ value, onChange, onFocusChange, onConfirm }: Wher
           styles.subtitle,
           {
             fontFamily: fontFamilyFor('regular', locale),
-            textAlign: locale === 'ar' ? 'right' : 'left',
+            textAlign: 'left',
             writingDirection: locale === 'ar' ? 'rtl' : 'ltr',
           },
         ]}>

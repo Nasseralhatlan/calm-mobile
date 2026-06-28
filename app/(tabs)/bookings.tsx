@@ -31,7 +31,7 @@ import { setSelectedBooking } from "@/data/selected-booking";
 import { getBookings, type ApiBookingListItem } from "@/lib/api";
 import { dateKey, riyadhToday } from "@/lib/date-key";
 import { formatSar } from "@/lib/format";
-import { useLocale, useT } from "@/lib/i18n";
+import { pickLang, useLocale, useT } from "@/lib/i18n";
 import { STR } from "@/lib/strings";
 
 const TEXT_PRIMARY = "#000000";
@@ -63,14 +63,25 @@ const bookingsSig = (arr: ApiBookingListItem[]): string =>
         )
         .join("|");
 
+// Build a date formatter defensively: some JS engines (Hermes) throw on rich
+// Arabic locale strings (the -u-ca-gregory-nu-latn extensions), which would
+// crash the whole screen. Fall back to en-US month names if so.
+function safeDateFmt(locale: "ar" | "en"): Intl.DateTimeFormat {
+    const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
+    try {
+        return new Intl.DateTimeFormat(
+            locale === "ar" ? "ar-SA-u-ca-gregory-nu-latn" : "en-US",
+            opts,
+        );
+    } catch {
+        return new Intl.DateTimeFormat("en-US", opts);
+    }
+}
+
 function formatRange(startISO: string, endISO: string, locale: "ar" | "en"): string {
     const a = new Date(`${startISO}T00:00:00`);
     const b = new Date(`${endISO}T00:00:00`);
-    // Arabic month names but Latin (Western) digits via nu-latn.
-    const fmt = new Intl.DateTimeFormat(
-        locale === "ar" ? "ar-SA-u-ca-gregory-nu-latn" : "en-US",
-        { day: "numeric", month: "short" },
-    );
+    const fmt = safeDateFmt(locale);
     if (startISO === endISO) return fmt.format(a);
     return `${fmt.format(a)} – ${fmt.format(b)}`;
 }
@@ -223,7 +234,7 @@ export default function BookingsScreen() {
                             styles.title,
                             {
                                 fontFamily: fontFamilyFor("bold", locale),
-                                textAlign: isRTL ? "right" : "left",
+                                textAlign: "left",
                                 writingDirection: isRTL ? "rtl" : "ltr",
                             },
                         ]}
@@ -416,7 +427,9 @@ function BookingRow({
 }) {
     const place = booking.place;
     const status = bookingStatusView(booking.status);
-    const title = place?.title ?? t({ ar: "حجز", en: "Booking" });
+    const title = place
+        ? pickLang(place.title_ar, place.title_en, place.title)
+        : t({ ar: "حجز", en: "Booking" });
     const cityName = place?.city
         ? locale === "ar"
             ? place.city.name_ar
@@ -454,7 +467,7 @@ function BookingRow({
                             styles.cardTitle,
                             {
                                 fontFamily: fontFamilyFor("bold", locale),
-                                textAlign: isRTL ? "right" : "left",
+                                textAlign: "left",
                                 writingDirection: isRTL ? "rtl" : "ltr",
                             },
                         ]}
@@ -480,7 +493,7 @@ function BookingRow({
                             styles.cardMeta,
                             {
                                 fontFamily: fontFamilyFor("regular", locale),
-                                textAlign: isRTL ? "right" : "left",
+                                textAlign: "left",
                                 writingDirection: isRTL ? "rtl" : "ltr",
                             },
                         ]}
@@ -496,14 +509,16 @@ function BookingRow({
                             styles.dateText,
                             {
                                 fontFamily: fontFamilyFor("medium", locale),
-                                textAlign: isRTL ? "right" : "left",
+                                textAlign: "left",
                             },
                         ]}
                     >
                         {dateLine}
                     </ThemedText>
                     <ThemedText style={[styles.price, { fontFamily: fontFamilyFor("bold", locale) }]}>
-                        {formatSar(booking.pricing.total)}
+                        {booking.pricing?.total != null
+                            ? formatSar(booking.pricing.total)
+                            : "—"}
                     </ThemedText>
                 </View>
             </View>

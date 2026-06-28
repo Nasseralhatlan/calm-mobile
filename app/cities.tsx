@@ -12,7 +12,7 @@ import { useHomeData } from '@/data/home';
 import { useSelectedCity } from '@/data/selected-city';
 import type { ApiCity } from '@/lib/api';
 import { fireHaptic } from '@/lib/haptics';
-import { LAYOUT_RTL, useLocale, useT } from '@/lib/i18n';
+import { useLocale, useT } from '@/lib/i18n';
 
 export default function CitiesModal() {
   const router = useRouter();
@@ -78,8 +78,8 @@ export default function CitiesModal() {
               styles.searchInput,
               {
                 fontFamily: fontFamilyFor('bold', locale),
-                textAlign: LAYOUT_RTL ? 'right' : 'left',
-                writingDirection: LAYOUT_RTL ? 'rtl' : 'ltr',
+                textAlign: 'left',
+                writingDirection: locale === 'ar' ? 'rtl' : 'ltr',
               },
             ]}
           />
@@ -237,7 +237,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     color: Colors.light.text,
     textAlign: 'center',
-    writingDirection: LAYOUT_RTL ? 'rtl' : 'ltr',
   },
 
   empty: {

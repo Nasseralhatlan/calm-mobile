@@ -39,7 +39,7 @@ import {
   type ApiOtpRequestResponse,
 } from "@/lib/api";
 import { fireHaptic } from "@/lib/haptics";
-import { LAYOUT_RTL, useLocale, useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
 
 type Step = "phone" | "otp";
 
@@ -236,7 +236,13 @@ export default function LoginModal() {
                         style={styles.closeBtn}
                     >
                         <IconSymbol
-                            name={isPhone ? "xmark" : "chevron.left"}
+                            name={
+                                isPhone
+                                    ? "xmark"
+                                    : locale === "ar"
+                                      ? "chevron.right"
+                                      : "chevron.left"
+                            }
                             size={18}
                             color={Colors.light.text}
                         />
@@ -354,6 +360,12 @@ export default function LoginModal() {
                                                     "bold",
                                                     locale,
                                                 ),
+                                                // Digits are neutral script, so
+                                                // align physically by locale.
+                                                textAlign:
+                                                    locale === "ar"
+                                                        ? "right"
+                                                        : "left",
                                             },
                                         ]}
                                         maxLength={12}
@@ -630,14 +642,12 @@ const styles = StyleSheet.create({
         lineHeight: 30,
         color: Colors.light.text,
         textAlign: "center",
-        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
     subtitle: {
         fontSize: 15,
         lineHeight: 22,
         color: Colors.light.textMuted,
         textAlign: "center",
-        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
         marginBottom: Spacing[4],
         paddingHorizontal: Spacing[3],
     },
@@ -683,7 +693,8 @@ const styles = StyleSheet.create({
         lineHeight: 20,
         color: Colors.light.text,
         padding: 0,
-        textAlign: "left",
+        // textAlign is applied inline (follows the active locale): right in
+        // Arabic, left in English.
     },
 
     otpFieldBox: {
@@ -747,6 +758,5 @@ const styles = StyleSheet.create({
         color: "#C53030",
         marginTop: Spacing[3],
         textAlign: "center",
-        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
 });

@@ -220,7 +220,7 @@ export default function PickDatesModal() {
                 styles.errorText,
                 {
                   fontFamily: fontFamilyFor('regular', locale),
-                  textAlign: isRTL ? 'right' : 'left',
+                  textAlign: 'left',
                 },
               ]}>
               {error}

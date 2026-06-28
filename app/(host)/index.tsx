@@ -39,7 +39,7 @@ export default function HostHome() {
   const { user, token } = useAuthState();
   const router = useRouter();
   const isRTL = locale === 'ar';
-  const align = isRTL ? ('right' as const) : ('left' as const);
+  const align = 'left' as const;
   const wd = isRTL ? ('rtl' as const) : ('ltr' as const);
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + HOST_HEADER_HEIGHT;

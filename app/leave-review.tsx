@@ -181,7 +181,7 @@ export default function LeaveReviewScreen() {
                             styles.input,
                             {
                                 fontFamily: fontFamilyFor("regular", locale),
-                                textAlign: isRTL ? "right" : "left",
+                                textAlign: "left",
                                 writingDirection: isRTL ? "rtl" : "ltr",
                             },
                         ]}

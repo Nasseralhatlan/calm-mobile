@@ -101,7 +101,7 @@ export function PendingPaymentCard() {
                             styles.title,
                             {
                                 fontFamily: fontFamilyFor("bold", locale),
-                                textAlign: isRTL ? "right" : "left",
+                                textAlign: "left",
                                 writingDirection: isRTL ? "rtl" : "ltr",
                             },
                         ]}

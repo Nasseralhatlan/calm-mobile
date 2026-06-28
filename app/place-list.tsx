@@ -58,7 +58,7 @@ export default function PlaceListScreen() {
             haptic="back"
             style={styles.iconBtn}
           >
-            <IconSymbol name="chevron.left" size={20} color={Colors.light.text} />
+            <IconSymbol name={locale === "ar" ? "chevron.right" : "chevron.left"} size={20} color={Colors.light.text} />
           </PressableScale>
           <View style={styles.titleCenter} pointerEvents="none">
             <ThemedText
@@ -67,7 +67,7 @@ export default function PlaceListScreen() {
                 styles.title,
                 {
                   fontFamily: fontFamilyFor("bold", locale),
-                  textAlign: isRTL ? "right" : "left",
+                  textAlign: "left",
                 },
               ]}
             >

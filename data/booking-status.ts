@@ -18,6 +18,14 @@ export const BOOKING_STATUS_THEME: Record<BookingApiStatus, StatusView> = {
 };
 
 // Always reflect the backend's actual status — never derive it from dates.
+// Falls back to a neutral chip for any unrecognized status so an unexpected
+// backend value can never crash the bookings screen.
 export function bookingStatusView(status: BookingApiStatus): StatusView {
-  return BOOKING_STATUS_THEME[status];
+  return (
+    BOOKING_STATUS_THEME[status] ?? {
+      bg: '#EEEEEE',
+      fg: '#6B7280',
+      label: { ar: String(status ?? ''), en: String(status ?? '') },
+    }
+  );
 }

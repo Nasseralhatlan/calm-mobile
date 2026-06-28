@@ -62,7 +62,7 @@ export default function FiltersModal() {
   const { locale } = useLocale();
   const isRTL = locale === 'ar';
   const rowDir = 'row' as const;
-  const align = isRTL ? ('right' as const) : ('left' as const);
+  const align = 'left' as const;
 
   const applied = getAppliedFilters();
 

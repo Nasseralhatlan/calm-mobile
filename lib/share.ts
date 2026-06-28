@@ -1,4 +1,6 @@
-import { I18nManager, Share } from 'react-native';
+import { Share } from 'react-native';
+
+import { getCurrentLocale } from '@/lib/i18n';
 
 // Public web origin for shareable links. Falls back to production when the env
 // var is unset (e.g. EAS cloud builds don't upload the gitignored .env), so a
@@ -12,7 +14,7 @@ const WEB_ORIGIN = process.env.EXPO_PUBLIC_WEB_URL ?? 'https://calmapp.co';
  * dismisses or sharing is unavailable.
  */
 export async function sharePlace(placeId: string, title?: string): Promise<void> {
-  const isRTL = I18nManager.isRTL;
+  const isRTL = getCurrentLocale() === 'ar';
   const url = placeId ? `${WEB_ORIGIN}/places/${placeId}` : undefined;
 
   const intro = title

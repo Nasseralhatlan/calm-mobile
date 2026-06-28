@@ -2,8 +2,7 @@ import { BlurView } from "expo-blur";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { useRouter, useSegments } from "expo-router";
-import { I18nManager, ScrollView, StyleSheet, View } from "react-native";
-import RNRestart from "react-native-restart";
+import { ScrollView, StyleSheet, View } from "react-native";
 import {
     SafeAreaView,
     useSafeAreaInsets,
@@ -29,8 +28,12 @@ import {
 } from "@/constants/theme";
 import { useAuthState } from "@/data/auth-state";
 import { setConfirm } from "@/data/confirm-dialog";
-import { setStoredLocale } from "@/data/locale-setting";
-import { LAYOUT_RTL, LOCALE_SWITCHING_ENABLED, useLocale, useT } from "@/lib/i18n";
+import {
+    LOCALE_SWITCHING_ENABLED,
+    useLocale,
+    useRtlText,
+    useT,
+} from "@/lib/i18n";
 
 type MenuIcon = (props: {
     size?: number;
@@ -56,8 +59,10 @@ interface MenuItemConfig {
 export default function ProfileScreen() {
     const t = useT();
     const router = useRouter();
-    const { locale } = useLocale();
-    const { isAuthed, user, signOut } = useAuthState();
+    const { locale, setLocale } = useLocale();
+    const rtl = useRtlText();
+
+    const { isAuthed, user, signOut, updateUser } = useAuthState();
     const segments = useSegments();
     const insets = useSafeAreaInsets();
     const tabBarHeight = insets.bottom * 0.75 + 64;
@@ -107,29 +112,24 @@ export default function ProfileScreen() {
         : "—";
 
     // Switch the app language/direction via a confirmation (like Log out, but a
-    // black button). On confirm: persist the choice, flip the native canvas, and
-    // restart so RN re-lays-out in the new direction.
+    // black button). On confirm: persist + push to the profile API and flip the
+    // direction instantly (no restart — direction is a Yoga style at the root).
     const switchLanguage = () => {
         const next = locale === "ar" ? "en" : "ar";
         setConfirm({
             title: t({ ar: "تغيير اللغة", en: "Change language" }),
             message: t({
-                ar: "سيُعاد تشغيل التطبيق لتطبيق اللغة الجديدة.",
-                en: "The app will restart to apply the new language.",
+                ar: "هل تريد تغيير لغة التطبيق؟",
+                en: "Switch the app language?",
             }),
             confirmLabel: next === "ar" ? "العربية" : "English",
             cancelLabel: t({ ar: "إلغاء", en: "Cancel" }),
             onConfirm: async () => {
-                // Persist BEFORE restarting so the boot reconcile reads the new
-                // value (otherwise it would flip back).
-                await setStoredLocale(next);
-                I18nManager.allowRTL(true);
-                I18nManager.forceRTL(next === "ar");
-                try {
-                    RNRestart.restart();
-                } catch {
-                    /* dev/Expo Go: applies on next manual reload */
-                }
+                // Persists locally + pushes to the profile API (SMS/push match).
+                await setLocale(next);
+                // Keep the cached auth user in sync so login-adoption stays
+                // consistent across relaunches.
+                if (user) await updateUser({ ...user, locale: next });
             },
         });
         router.push("/confirm");
@@ -200,7 +200,10 @@ export default function ProfileScreen() {
                 <ThemedText
                     style={[
                         styles.title,
-                        { fontFamily: fontFamilyFor("bold", locale) },
+                        rtl,
+                        {
+                            fontFamily: fontFamilyFor("bold", locale),
+                        },
                     ]}
                 >
                     {t({ ar: TITLE_AR, en: "Account" })}
@@ -212,6 +215,7 @@ export default function ProfileScreen() {
                         <ThemedText
                             style={[
                                 styles.subtitle,
+                                rtl,
                                 {
                                     fontFamily: fontFamilyFor(
                                         "regular",
@@ -353,6 +357,7 @@ export default function ProfileScreen() {
                                 <ThemedText
                                     style={[
                                         styles.hostTitle,
+                                        rtl,
                                         {
                                             fontFamily: fontFamilyFor(
                                                 "bold",
@@ -369,6 +374,7 @@ export default function ProfileScreen() {
                                 <ThemedText
                                     style={[
                                         styles.hostSubtitle,
+                                        rtl,
                                         {
                                             fontFamily: fontFamilyFor(
                                                 "regular",
@@ -427,7 +433,10 @@ export default function ProfileScreen() {
                     {isAuthed ? (
                         <MenuRow
                             Icon={DeleteIcon}
-                            label={t({ ar: "حذف الحساب", en: "Delete account" })}
+                            label={t({
+                                ar: "حذف الحساب",
+                                en: "Delete account",
+                            })}
                             onPress={() => router.push("/delete-account")}
                             locale={locale}
                         />
@@ -548,11 +557,17 @@ function UserField({
     value: string;
     locale: "ar" | "en";
 }) {
+    const isRTL = locale === "ar";
+    const rtl = {
+        textAlign: "left" as "right" | "left",
+        writingDirection: (isRTL ? "rtl" : "ltr") as "rtl" | "ltr",
+    };
     return (
         <View style={styles.userFieldRow}>
             <ThemedText
                 style={[
                     styles.userFieldLabel,
+                    rtl,
                     { fontFamily: fontFamilyFor("medium", locale) },
                 ]}
             >
@@ -562,6 +577,7 @@ function UserField({
                 numberOfLines={1}
                 style={[
                     styles.userFieldValue,
+                    rtl,
                     { fontFamily: fontFamilyFor("regular", locale) },
                 ]}
             >
@@ -585,6 +601,7 @@ function MenuRow({
     tint?: string;
 }) {
     const color = tint ?? TEXT_PRIMARY;
+    const isRTL = locale === "ar";
     return (
         <PressableScale
             haptic="select"
@@ -598,7 +615,12 @@ function MenuRow({
             <ThemedText
                 style={[
                     styles.menuLabel,
-                    { color, fontFamily: fontFamilyFor("bold", locale) },
+                    {
+                        color,
+                        fontFamily: fontFamilyFor("bold", locale),
+                        textAlign: "left",
+                        writingDirection: isRTL ? "rtl" : "ltr",
+                    },
                 ]}
                 numberOfLines={1}
             >
@@ -629,15 +651,11 @@ const styles = StyleSheet.create({
         fontSize: 22,
         lineHeight: 28,
         color: TEXT_PRIMARY,
-        textAlign: LAYOUT_RTL ? "right" : "left",
-        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
     subtitle: {
         fontSize: 13,
         lineHeight: 20,
         color: TEXT_SECONDARY,
-        textAlign: LAYOUT_RTL ? "right" : "left",
-        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
 
     ctaWrap: { alignItems: "flex-start" },
@@ -740,7 +758,6 @@ const styles = StyleSheet.create({
         lineHeight: 20,
         color: TEXT_PRIMARY,
         width: "30%",
-        textAlign: LAYOUT_RTL ? "right" : "left",
     },
     userFieldValue: {
         fontSize: 15,
@@ -748,7 +765,6 @@ const styles = StyleSheet.create({
         color: TEXT_SECONDARY,
         flexShrink: 1,
         width: "70%",
-        textAlign: LAYOUT_RTL ? "right" : "left",
     },
 
     hostCard: {
@@ -764,15 +780,11 @@ const styles = StyleSheet.create({
         fontSize: 15,
         lineHeight: 20,
         color: TEXT_PRIMARY,
-        textAlign: LAYOUT_RTL ? "right" : "left",
-        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
     hostSubtitle: {
         fontSize: 13,
         lineHeight: 20,
         color: TEXT_SECONDARY,
-        textAlign: LAYOUT_RTL ? "right" : "left",
-        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
 
     divider: {
@@ -802,8 +814,6 @@ const styles = StyleSheet.create({
         fontSize: 15,
         lineHeight: 20,
         color: TEXT_PRIMARY,
-        textAlign: LAYOUT_RTL ? "right" : "left",
-        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
 
     footer: {
@@ -823,7 +833,6 @@ const styles = StyleSheet.create({
         lineHeight: 16,
         color: "#D5D5D5",
         textAlign: "center",
-        writingDirection: LAYOUT_RTL ? "rtl" : "ltr",
     },
 
     fabWrap: {

@@ -38,7 +38,7 @@ function PlaceCardCompactBase({ place }: PlaceCardCompactProps) {
     fontSize: 12,
     lineHeight: 16,
     color: '#000000',
-    textAlign: isRTL ? ('right' as const) : ('left' as const),
+    textAlign: 'left' as const,
     writingDirection: isRTL ? ('rtl' as const) : ('ltr' as const),
   };
 

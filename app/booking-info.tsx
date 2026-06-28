@@ -30,7 +30,7 @@ import {
     formatDateTime,
     formatSar,
 } from "@/lib/format";
-import { useLocale, useT } from "@/lib/i18n";
+import { pickLang, useLocale, useT } from "@/lib/i18n";
 import { shareText } from "@/lib/share";
 
 const STAR_ON = "#FBBF24";
@@ -45,7 +45,7 @@ export default function BookingInfoScreen() {
     const t = useT();
     const router = useRouter();
     const isRTL = locale === "ar";
-    const align = isRTL ? ("right" as const) : ("left" as const);
+    const align = "left" as const;
     const wd = isRTL ? ("rtl" as const) : ("ltr" as const);
 
     const booking = getSelectedBooking();
@@ -105,7 +105,9 @@ export default function BookingInfoScreen() {
 
     const place = booking.place;
     const status = bookingStatusView(booking.status);
-    const title = place?.title ?? t({ ar: "حجز", en: "Booking" });
+    const title = place
+        ? pickLang(place.title_ar, place.title_en, place.title)
+        : t({ ar: "حجز", en: "Booking" });
     const cityName = place?.city
         ? locale === "ar"
             ? place.city.name_ar
@@ -235,7 +237,7 @@ export default function BookingInfoScreen() {
                     styles.rowValue,
                     {
                         fontFamily: fontFamilyFor("medium", locale),
-                        textAlign: isRTL ? "left" : "right",
+                        textAlign: "right",
                     },
                 ]}
             >

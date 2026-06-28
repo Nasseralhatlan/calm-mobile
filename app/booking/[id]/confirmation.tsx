@@ -150,7 +150,7 @@ export default function ConfirmationScreen() {
                       styles.cardTitle,
                       {
                         fontFamily: fontFamilyFor('bold', locale),
-                        textAlign: isRTL ? 'right' : 'left',
+                        textAlign: 'left',
                         writingDirection: isRTL ? 'rtl' : 'ltr',
                       },
                     ]}>
@@ -161,7 +161,7 @@ export default function ConfirmationScreen() {
                       styles.cardSub,
                       {
                         fontFamily: fontFamilyFor('regular', locale),
-                        textAlign: isRTL ? 'right' : 'left',
+                        textAlign: 'left',
                         writingDirection: isRTL ? 'rtl' : 'ltr',
                       },
                     ]}>
@@ -172,7 +172,7 @@ export default function ConfirmationScreen() {
                       styles.cardSub,
                       {
                         fontFamily: fontFamilyFor('regular', locale),
-                        textAlign: isRTL ? 'right' : 'left',
+                        textAlign: 'left',
                       },
                     ]}>
                     {t({ ar: `${listing.capacity.guests} ضيف`, en: `${listing.capacity.guests} guests` })}

@@ -28,7 +28,7 @@ export default function DescriptionModal() {
               styles.body,
               {
                 fontFamily: fontFamilyFor('regular', locale),
-                textAlign: isRTL ? 'right' : 'left',
+                textAlign: 'left',
                 writingDirection: isRTL ? 'rtl' : 'ltr',
               },
             ]}>
@@ -38,7 +38,7 @@ export default function DescriptionModal() {
           <ThemedText
             style={[
               styles.empty,
-              { fontFamily: fontFamilyFor('regular', locale), textAlign: isRTL ? 'right' : 'left' },
+              { fontFamily: fontFamilyFor('regular', locale), textAlign: 'left' },
             ]}>
             {t({ ar: 'جاري التحميل…', en: 'Loading…' })}
           </ThemedText>

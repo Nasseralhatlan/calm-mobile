@@ -372,7 +372,7 @@ export default function ListingPhotosScreen() {
                             styles.sectionTitle,
                             {
                                 fontFamily: fontFamilyFor("bold", locale),
-                                textAlign: isRTL ? "right" : "left",
+                                textAlign: "left",
                                 writingDirection: isRTL ? "rtl" : "ltr",
                             },
                         ]}
@@ -389,7 +389,7 @@ export default function ListingPhotosScreen() {
                                         "regular",
                                         locale,
                                     ),
-                                    textAlign: isRTL ? "right" : "left",
+                                    textAlign: "left",
                                     writingDirection: isRTL ? "rtl" : "ltr",
                                 },
                             ]}
@@ -468,7 +468,7 @@ export default function ListingPhotosScreen() {
                         style={styles.iconBtn}
                     >
                         <IconSymbol
-                            name="chevron.left"
+                            name={locale === "ar" ? "chevron.right" : "chevron.left"}
                             size={20}
                             color={Colors.light.text}
                         />

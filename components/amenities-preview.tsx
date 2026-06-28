@@ -6,7 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
 import { AMENITIES } from '@/data/amenities';
 import type { AmenityId } from '@/data/types';
-import { useLocale, useT } from '@/lib/i18n';
+import { useLocale, useRtlText, useT } from '@/lib/i18n';
 
 interface AmenitiesPreviewProps {
   amenities: AmenityId[];
@@ -16,6 +16,7 @@ interface AmenitiesPreviewProps {
 
 export function AmenitiesPreview({ amenities, previewCount = 6, onShowAll }: AmenitiesPreviewProps) {
   const { locale } = useLocale();
+  const rtl = useRtlText();
   const t = useT();
   const visible = amenities.slice(0, previewCount);
   const remaining = Math.max(amenities.length - previewCount, 0);
@@ -27,7 +28,7 @@ export function AmenitiesPreview({ amenities, previewCount = 6, onShowAll }: Ame
           <View key={id} style={styles.row}>
             <AmenityIcon id={id} size={22} />
             <ThemedText
-              style={[styles.label, { fontFamily: fontFamilyFor('regular', locale) }]}
+              style={[styles.label, rtl, { fontFamily: fontFamilyFor('regular', locale) }]}
               numberOfLines={1}>
               {t(AMENITIES[id].label)}
             </ThemedText>

@@ -91,12 +91,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     // Inset by half a thumb so thumbs at the extremes stay inside the row.
     paddingHorizontal: THUMB / 2,
+    // The thumb/fill math is physical (left + translateX). Force an LTR context
+    // so it works identically under RTL — otherwise the absolutely-positioned
+    // thumbs anchor to the right edge in Arabic and the slider can't be dragged.
+    direction: 'ltr',
   },
   track: {
     height: TRACK_H,
     borderRadius: TRACK_H,
     backgroundColor: '#EAEAEA',
     justifyContent: 'center',
+    direction: 'ltr',
   },
   fill: {
     position: 'absolute',

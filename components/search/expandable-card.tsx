@@ -9,7 +9,7 @@ import Animated, {
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, fontFamilyFor } from '@/constants/theme';
-import { LAYOUT_RTL, useLocale } from '@/lib/i18n';
+import { useLocale } from '@/lib/i18n';
 
 interface ExpandableCardProps {
   label: string;
@@ -62,7 +62,13 @@ export function ExpandableCard({
         {!expanded && value ? (
           <ThemedText
             numberOfLines={1}
-            style={[styles.value, { fontFamily: fontFamilyFor('bold', locale) }]}>
+            style={[
+              styles.value,
+              {
+                fontFamily: fontFamilyFor('bold', locale),
+                textAlign: 'left',
+              },
+            ]}>
             {value}
           </ThemedText>
         ) : null}
@@ -131,7 +137,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: Colors.light.text,
     flexShrink: 1,
-    textAlign: 'left',
   },
   body: {
     flex: 1,

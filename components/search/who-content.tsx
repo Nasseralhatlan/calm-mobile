@@ -42,7 +42,7 @@ export function WhoContent({ value, onChange }: WhoContentProps) {
               styles.label,
               {
                 fontFamily: fontFamilyFor('bold', locale),
-                textAlign: isRTL ? 'right' : 'left',
+                textAlign: 'left',
               },
             ]}>
             {t({ ar: 'عدد الضيوف', en: 'Guests' })}
@@ -52,7 +52,7 @@ export function WhoContent({ value, onChange }: WhoContentProps) {
               styles.sub,
               {
                 fontFamily: fontFamilyFor('regular', locale),
-                textAlign: isRTL ? 'right' : 'left',
+                textAlign: 'left',
               },
             ]}>
             {t({ ar: 'الإجمالي شامل الكبار و الأطفال', en: 'Total adults and children' })}
