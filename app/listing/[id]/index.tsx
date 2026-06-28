@@ -717,7 +717,7 @@ export default function ListingDetailScreen() {
                         >
                             {t({
                                 ar: "المرافق و المميزات",
-                                en: "Features & Spaces",
+                                en: "Amenities & features",
                             })}
                         </ThemedText>
                         <View style={styles.amenitiesList}>
@@ -779,8 +779,8 @@ export default function ListingDetailScreen() {
                                     ]}
                                 >
                                     {t({
-                                        ar: `عرض جميع المميزات (${amenityDisplay.length})`,
-                                        en: `Show all features (${amenityDisplay.length})`,
+                                        ar: `عرض جميع المرافق (${amenityDisplay.length})`,
+                                        en: `Show all amenities (${amenityDisplay.length})`,
                                     })}
                                 </ThemedText>
                             </PressableScale>
@@ -902,228 +902,258 @@ export default function ListingDetailScreen() {
 
                 {/* Reviews — published only; hidden when the place has none. */}
                 {reviews.length > 0 ? (
-                <View style={styles.section}>
-                    {/* Overall rating — big number + count, stars beneath. */}
-                    <View style={styles.overallInline}>
-                        <ThemedText
-                            style={[
-                                styles.overallNum,
-                                { fontFamily: fontFamilyFor("bold", "en") },
-                            ]}
-                        >
-                            {listing.rating.average.toFixed(1)}
-                        </ThemedText>
-                        <View
-                            style={[
-                                styles.overallStars,
-                                { flexDirection: rowDir },
-                            ]}
-                        >
-                            {Array.from({ length: 5 }).map((_, i) => (
-                                <StarIcon
-                                    key={i}
-                                    size={15}
-                                    color={
-                                        i < Math.round(listing.rating.average)
-                                            ? TEXT_PRIMARY
-                                            : "#E5E5E5"
-                                    }
-                                />
-                            ))}
+                    <View style={styles.section}>
+                        {/* Overall rating — big number + count, stars beneath. */}
+                        <View style={styles.overallInline}>
+                            <ThemedText
+                                style={[
+                                    styles.overallNum,
+                                    { fontFamily: fontFamilyFor("bold", "en") },
+                                ]}
+                            >
+                                {listing.rating.average.toFixed(1)}
+                            </ThemedText>
+                            <View
+                                style={[
+                                    styles.overallStars,
+                                    { flexDirection: rowDir },
+                                ]}
+                            >
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                    <StarIcon
+                                        key={i}
+                                        size={15}
+                                        color={
+                                            i <
+                                            Math.round(listing.rating.average)
+                                                ? TEXT_PRIMARY
+                                                : "#E5E5E5"
+                                        }
+                                    />
+                                ))}
+                            </View>
+                            <ThemedText
+                                style={[
+                                    styles.overallCount,
+                                    {
+                                        fontFamily: fontFamilyFor(
+                                            "regular",
+                                            locale,
+                                        ),
+                                    },
+                                ]}
+                            >
+                                {listing.rating.count}{" "}
+                                {t({ ar: "تقييم", en: "reviews" })}
+                            </ThemedText>
                         </View>
-                        <ThemedText
-                            style={[
-                                styles.overallCount,
-                                {
-                                    fontFamily: fontFamilyFor(
-                                        "regular",
-                                        locale,
-                                    ),
-                                },
-                            ]}
-                        >
-                            {listing.rating.count}{" "}
-                            {t({ ar: "تقييم", en: "reviews" })}
-                        </ThemedText>
-                    </View>
 
-                    {/* Paginated review comments — one snaps into view at a time,
+                        {/* Paginated review comments — one snaps into view at a time,
                         the next peeks in; separator sits in the gap between. */}
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        snapToInterval={REVIEW_ITEM_W}
-                        snapToAlignment="start"
-                        decelerationRate="fast"
-                        disableIntervalMomentum
-                        contentContainerStyle={styles.reviewsRow}
-                    >
-                        {reviews.slice(0, 6).map((r, idx) => (
-                            <View key={r.id} style={{ flexDirection: "row" }}>
-                                {/* Border on the leading edge for every comment
-                                    except the first → a separator only between them. */}
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            snapToInterval={REVIEW_ITEM_W}
+                            snapToAlignment="start"
+                            decelerationRate="fast"
+                            disableIntervalMomentum
+                            contentContainerStyle={styles.reviewsRow}
+                        >
+                            {reviews.slice(0, 6).map((r, idx) => (
                                 <View
-                                    style={[
-                                        styles.reviewItem,
-                                        idx > 0 && styles.reviewItemSep,
-                                    ]}
+                                    key={r.id}
+                                    style={{ flexDirection: "row" }}
                                 >
+                                    {/* Border on the leading edge for every comment
+                                    except the first → a separator only between them. */}
                                     <View
                                         style={[
-                                            styles.reviewHead,
-                                            { flexDirection: rowDir },
+                                            styles.reviewItem,
+                                            idx > 0 && styles.reviewItemSep,
                                         ]}
                                     >
-                                        <View style={styles.reviewAvatarTile}>
-                                            {r.reviewer_avatar_url ? (
-                                                <Image
-                                                    source={{ uri: r.reviewer_avatar_url }}
-                                                    style={styles.reviewAvatarImg}
-                                                    contentFit="cover"
-                                                />
-                                            ) : (
-                                                <View style={styles.reviewAvatarInner}>
-                                                    <ThemedText
-                                                        style={[
-                                                            styles.reviewAvatarInitial,
-                                                            {
-                                                                fontFamily: fontFamilyFor(
+                                        <View
+                                            style={[
+                                                styles.reviewHead,
+                                                { flexDirection: rowDir },
+                                            ]}
+                                        >
+                                            <View
+                                                style={styles.reviewAvatarTile}
+                                            >
+                                                {r.reviewer_avatar_url ? (
+                                                    <Image
+                                                        source={{
+                                                            uri: r.reviewer_avatar_url,
+                                                        }}
+                                                        style={
+                                                            styles.reviewAvatarImg
+                                                        }
+                                                        contentFit="cover"
+                                                    />
+                                                ) : (
+                                                    <View
+                                                        style={
+                                                            styles.reviewAvatarInner
+                                                        }
+                                                    >
+                                                        <ThemedText
+                                                            style={[
+                                                                styles.reviewAvatarInitial,
+                                                                {
+                                                                    fontFamily:
+                                                                        fontFamilyFor(
+                                                                            "bold",
+                                                                            locale,
+                                                                        ),
+                                                                },
+                                                            ]}
+                                                        >
+                                                            {r.reviewer_name
+                                                                ?.trim()
+                                                                ?.charAt(0) ||
+                                                                "-"}
+                                                        </ThemedText>
+                                                    </View>
+                                                )}
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <ThemedText
+                                                    numberOfLines={1}
+                                                    style={[
+                                                        styles.reviewName,
+                                                        {
+                                                            fontFamily:
+                                                                fontFamilyFor(
                                                                     "bold",
                                                                     locale,
                                                                 ),
-                                                            },
-                                                        ]}
-                                                    >
-                                                        {r.reviewer_name?.trim()?.charAt(0) || "-"}
-                                                    </ThemedText>
-                                                </View>
-                                            )}
-                                        </View>
-                                        <View style={{ flex: 1 }}>
-                                            <ThemedText
-                                                numberOfLines={1}
-                                                style={[
-                                                    styles.reviewName,
-                                                    {
-                                                        fontFamily:
-                                                            fontFamilyFor(
-                                                                "bold",
-                                                                locale,
-                                                            ),
-                                                        textAlign: "left",
-                                                    },
-                                                ]}
-                                            >
-                                                {reviewerName(r.reviewer_name)}
-                                            </ThemedText>
-                                            <ThemedText
-                                                numberOfLines={1}
-                                                style={[
-                                                    styles.reviewDate,
-                                                    {
-                                                        fontFamily:
-                                                            fontFamilyFor(
-                                                                "regular",
-                                                                locale,
-                                                            ),
-                                                        textAlign: "left",
-                                                    },
-                                                ]}
-                                            >
-                                                {formatReviewDate(r.created_at)}
-                                            </ThemedText>
-                                        </View>
-                                    </View>
-                                    <View
-                                        style={[
-                                            styles.reviewStars,
-                                            { flexDirection: rowDir },
-                                        ]}
-                                    >
-                                        {Array.from({ length: 5 }).map(
-                                            (_, i) => (
-                                                <StarIcon
-                                                    key={i}
-                                                    size={11}
-                                                    color={
-                                                        i < r.rate
-                                                            ? TEXT_PRIMARY
-                                                            : "#E5E5E5"
-                                                    }
-                                                />
-                                            ),
-                                        )}
-                                    </View>
-                                    {r.comment ? (
-                                        <>
-                                            <ThemedText
-                                                numberOfLines={5}
-                                                style={[
-                                                    styles.reviewText,
-                                                    {
-                                                        fontFamily: fontFamilyFor(
-                                                            "regular",
-                                                            locale,
-                                                        ),
-                                                        textAlign: "left",
-                                                    },
-                                                ]}
-                                            >
-                                                {r.comment}
-                                            </ThemedText>
-                                            <PressableScale
-                                                haptic="select"
-                                                onPress={() =>
-                                                    router.push(
-                                                        `/listing/${listing.id}/reviews`,
-                                                    )
-                                                }
-                                            >
-                                                <ThemedText
-                                                    style={[
-                                                        styles.reviewShowMore,
-                                                        {
-                                                            fontFamily: fontFamilyFor(
-                                                                "medium",
-                                                                locale,
-                                                            ),
                                                             textAlign: "left",
                                                         },
                                                     ]}
                                                 >
-                                                    {t({
-                                                        ar: "عرض المزيد",
-                                                        en: "Show more",
-                                                    })}
+                                                    {reviewerName(
+                                                        r.reviewer_name,
+                                                    )}
                                                 </ThemedText>
-                                            </PressableScale>
-                                        </>
-                                    ) : null}
+                                                <ThemedText
+                                                    numberOfLines={1}
+                                                    style={[
+                                                        styles.reviewDate,
+                                                        {
+                                                            fontFamily:
+                                                                fontFamilyFor(
+                                                                    "regular",
+                                                                    locale,
+                                                                ),
+                                                            textAlign: "left",
+                                                        },
+                                                    ]}
+                                                >
+                                                    {formatReviewDate(
+                                                        r.created_at,
+                                                    )}
+                                                </ThemedText>
+                                            </View>
+                                        </View>
+                                        <View
+                                            style={[
+                                                styles.reviewStars,
+                                                { flexDirection: rowDir },
+                                            ]}
+                                        >
+                                            {Array.from({ length: 5 }).map(
+                                                (_, i) => (
+                                                    <StarIcon
+                                                        key={i}
+                                                        size={11}
+                                                        color={
+                                                            i < r.rate
+                                                                ? TEXT_PRIMARY
+                                                                : "#E5E5E5"
+                                                        }
+                                                    />
+                                                ),
+                                            )}
+                                        </View>
+                                        {r.comment ? (
+                                            <>
+                                                <ThemedText
+                                                    numberOfLines={5}
+                                                    style={[
+                                                        styles.reviewText,
+                                                        {
+                                                            fontFamily:
+                                                                fontFamilyFor(
+                                                                    "regular",
+                                                                    locale,
+                                                                ),
+                                                            textAlign: "left",
+                                                        },
+                                                    ]}
+                                                >
+                                                    {r.comment}
+                                                </ThemedText>
+                                                <PressableScale
+                                                    haptic="select"
+                                                    onPress={() =>
+                                                        router.push(
+                                                            `/listing/${listing.id}/reviews`,
+                                                        )
+                                                    }
+                                                >
+                                                    <ThemedText
+                                                        style={[
+                                                            styles.reviewShowMore,
+                                                            {
+                                                                fontFamily:
+                                                                    fontFamilyFor(
+                                                                        "medium",
+                                                                        locale,
+                                                                    ),
+                                                                textAlign:
+                                                                    "left",
+                                                            },
+                                                        ]}
+                                                    >
+                                                        {t({
+                                                            ar: "عرض المزيد",
+                                                            en: "Show more",
+                                                        })}
+                                                    </ThemedText>
+                                                </PressableScale>
+                                            </>
+                                        ) : null}
+                                    </View>
                                 </View>
-                            </View>
-                        ))}
-                    </ScrollView>
+                            ))}
+                        </ScrollView>
 
-                    <PressableScale
-                        haptic="select"
-                        onPress={() =>
-                            router.push(`/listing/${listing.id}/reviews`)
-                        }
-                        style={[styles.showMorePill, styles.reviewsShowAll]}
-                    >
-                        <ThemedText
-                            style={[
-                                styles.showMoreText,
-                                { fontFamily: fontFamilyFor("medium", locale) },
-                            ]}
+                        <PressableScale
+                            haptic="select"
+                            onPress={() =>
+                                router.push(`/listing/${listing.id}/reviews`)
+                            }
+                            style={[styles.showMorePill, styles.reviewsShowAll]}
                         >
-                            {t({
-                                ar: `عرض جميع التقييمات (${listing.rating.count})`,
-                                en: `Show all reviews (${listing.rating.count})`,
-                            })}
-                        </ThemedText>
-                    </PressableScale>
-                </View>
+                            <ThemedText
+                                style={[
+                                    styles.showMoreText,
+                                    {
+                                        fontFamily: fontFamilyFor(
+                                            "medium",
+                                            locale,
+                                        ),
+                                    },
+                                ]}
+                            >
+                                {t({
+                                    ar: `عرض جميع التقييمات (${listing.rating.count})`,
+                                    en: `Show all reviews (${listing.rating.count})`,
+                                })}
+                            </ThemedText>
+                        </PressableScale>
+                    </View>
                 ) : null}
 
                 {/* Rules — only when the backend provides them */}

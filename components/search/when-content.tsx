@@ -205,6 +205,10 @@ function MonthGrid({
   for (let d = 1; d <= daysInMonth; d++) {
     cells.push({ day: d, date: new Date(month.getFullYear(), month.getMonth(), d) });
   }
+  // Pad the trailing week, then chunk into rows of exactly 7.
+  while (cells.length % 7 !== 0) cells.push(null);
+  const weeks: (typeof cells)[] = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
 
   const { start, end } = range;
 
@@ -215,7 +219,10 @@ function MonthGrid({
         {monthLabel}
       </ThemedText>
       <View style={monthStyles.grid}>
-        {cells.map((c, i) => {
+        {weeks.map((week, wi) => (
+          <View key={wi} style={monthStyles.week}>
+            {week.map((c, ci) => {
+          const i = wi * 7 + ci;
           if (!c) return <View key={i} style={monthStyles.cell} />;
           const past = c.date < today;
           const isBlocked = !!blocked && blocked.has(dateKey(c.date));
@@ -266,7 +273,9 @@ function MonthGrid({
               </View>
             </Pressable>
           );
-        })}
+            })}
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -332,9 +341,13 @@ const monthStyles = StyleSheet.create({
     color: Colors.light.text,
     marginBottom: Spacing[3],
   },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  grid: {},
+  week: { flexDirection: 'row' },
   cell: {
-    width: `${100 / 7}%`,
+    // flex:1 in an explicit 7-column row guarantees exactly 7 per row on every
+    // screen. (Percentage widths + flexWrap round up and wrap to 6 on narrow
+    // screens, misaligning the day numbers from the weekday header.)
+    flex: 1,
     aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
