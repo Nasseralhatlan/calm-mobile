@@ -10,7 +10,7 @@ import { Spacing, fontFamilyFor } from '@/constants/theme';
 import { useLikes } from '@/data/likes';
 import type { ApiPlace } from '@/lib/api';
 import { formatSarInt } from '@/lib/format';
-import { useLocale } from '@/lib/i18n';
+import { pickLang, useLocale } from '@/lib/i18n';
 
 interface PlaceCardCompactProps {
   place: ApiPlace;
@@ -25,7 +25,9 @@ function PlaceCardCompactBase({ place }: PlaceCardCompactProps) {
   const liked = isLiked(place.id, place.is_liked);
 
   const imageUrl = place.cover_photo_url ?? place.photos?.[0]?.url ?? null;
-  const cityName = locale === 'ar' ? place.city.name_ar : place.city.name_en;
+  const cityName = place.city
+    ? (locale === 'ar' ? place.city.name_ar : place.city.name_en) ?? ''
+    : '';
   const areaName = place.city_area
     ? locale === 'ar'
       ? place.city_area.name_ar
@@ -56,7 +58,7 @@ function PlaceCardCompactBase({ place }: PlaceCardCompactProps) {
             />
           ) : (
             <View style={styles.imageFallback}>
-              <ThemedText style={styles.fallbackIcon}>{place.type.icon}</ThemedText>
+              <ThemedText style={styles.fallbackIcon}>{place.type?.icon ?? ''}</ThemedText>
             </View>
           )}
           <View style={styles.heart}>
@@ -68,7 +70,7 @@ function PlaceCardCompactBase({ place }: PlaceCardCompactProps) {
           <ThemedText
             numberOfLines={1}
             style={[textBase, { fontFamily: fontFamilyFor('medium', locale) }]}>
-            {place.title}
+            {pickLang(place.title_ar, place.title_en, place.title)}
           </ThemedText>
           <ThemedText
             numberOfLines={1}
